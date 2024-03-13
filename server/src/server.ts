@@ -47,8 +47,8 @@ app.post('/login', (req, res) => {
         if (err) {
             res.status(500).send(JSON.stringify({
                 "message": "Error retrieving data from database",
-                "error": `${err.message}`
             }))
+            console.log(err.message);
             return;
         }
         if (row) {
@@ -71,25 +71,25 @@ app.post('/login', (req, res) => {
 
 app.post('/register', async (req, res) => {
     const userName = req.body.user_name;
-    var count : number = await new Promise((resolve, reject) => {
-        db.get("SELECT COUNT(*) FROM Users WHERE user_name = ?", [userName], (err : Error | null, row : number) => {
-            if (err){
+    var count: number = await new Promise((resolve, reject) => {
+        db.get("SELECT COUNT(*) FROM Users WHERE user_name = ?", [userName], (err: Error | null, row: number) => {
+            if (err) {
                 reject(err);
                 res.status(500).send(JSON.stringify({
-                    "message" : "Error retrieving data from database",
-                    "error" : `${err.message}`
+                    "message": "Error retrieving data from database",
                 }))
+                console.log(err.message);
                 return;
             }
             resolve(row);
         })
     })
-    if (count > 0){
+    if (count > 0) {
         res.status(400).send(JSON.stringify({
-            "message" : "Username already existed"
+            "message": "Username already existed"
         }))
     }
-    else{
+    else {
         const password = req.body.password;
         const firstName = req.body.first_name;
         const lastName = req.body.last_name;
@@ -101,20 +101,38 @@ app.post('/register', async (req, res) => {
         const question3 = req.body.question3;
 
         db.run("INSERT INTO Users (user_name, password, first_name, last_name, secure_question1, secure_question2, secure_question3, answer1, answer2, answer3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [userName, password, firstName, lastName, question1, question2, question3, answer1, answer2, answer3], function (err) {
-            if (err){
+            if (err) {
                 res.status(500).send(JSON.stringify({
-                    "message" : "Error adding data into database",
-                    "error" : `${err.message}`
+                    "message": "Error adding data into database",
                 }))
                 console.log(err.message);
             }
-            else{
+            else {
                 res.status(200).send(JSON.stringify({
-                    "message" : "Registration successful"
+                    "message": "Registration successful"
                 }))
             }
         })
-        
+
+    }
+})
+
+app.put('/rent', (req, res) => {
+    if (!loggedIn) {
+        res.status(400).send(JSON.stringify({
+            "message": "Function only available after logging in"
+        }))
+    }
+    else {
+        const carId = req.body.carId;
+        db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [currentUser?.ID, carId], function (err) {
+            if (err) {
+                res.status(400).send(JSON.stringify({
+                    "message": "Error modifying database record"
+                }))
+                console.log(err.message);
+            }
+        })
     }
 })
 
