@@ -4,4 +4,9 @@ DriveShare is a Peer-to-Peet Car Rental Platform. DriveShare is a web applicatio
 
 #Language
 
-DriveShare is writen in JavaScript using NodeJS, React and ExpressJS
+DriveShare is writen in JavaScript and TypeScript using NodeJS, React and ExpressJS
+
+#How to build
+
+Use command "npm run build" in server directory
+To run, use command "npm run start"
