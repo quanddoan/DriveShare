@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express'
 import sqlite3 from 'sqlite3'
 import { userRecord, userAuthenticator } from './authenticator';
+import { layer1, recoveryAnswers } from "./passwordRecovery";
 
 const app: Express = express();
 const db = new sqlite3.Database('database.db');
@@ -18,7 +19,14 @@ interface carInfo {
 }
 
 var array: carInfo[] = [];
-var currentUser: userRecord | null;
+var currentUser: userRecord = {
+    ID: -1,
+    user_name: "",
+    password: "",
+    first_name: "",
+    last_name: "",
+    balance : -1
+};
 let loggedIn = false;
 
 app.get('/', (req, res) => {
@@ -43,7 +51,7 @@ app.post('/login', (req, res) => {
 
     const userName = req.body.user_name;
     const password = req.body.password;
-    db.get("SELECT ID, user_name, password, first_name, last_name FROM Users WHERE user_name = ?", [userName], (err: Error | null, row: userRecord) => {
+    db.get("SELECT ID, user_name, password, first_name, last_name, balance FROM Users WHERE user_name = ?", [userName], (err: Error | null, row: userRecord) => {
         if (err) {
             res.status(500).send(JSON.stringify({
                 "message": "Error retrieving data from database",
@@ -54,10 +62,20 @@ app.post('/login', (req, res) => {
         if (row) {
             let newObject = userAuthenticator.createObject(row);
             if (newObject.authenticate(userName, password)) {
-                currentUser = row;
+                currentUser = {
+                    ID: row.ID,
+                    user_name: row.user_name,
+                    password: "",
+                    first_name: row.first_name,
+                    last_name: row.last_name,
+                    balance : row.balance
+                };
                 loggedIn = true;
-                res.status(200).send(JSON.stringify({
-                    "message": `Welcome ${row.first_name}`
+                res.status(200).send(JSON.stringify(currentUser))
+            }
+            else{
+                res.status(404).send(JSON.stringify({
+                    "message": "Wrong username of password"
                 }))
             }
         }
@@ -69,10 +87,29 @@ app.post('/login', (req, res) => {
     })
 })
 
+app.get('/logout', (req, res) => {
+    loggedIn = false;
+    currentUser = {
+        ID: -1,
+        user_name: "",
+        password: "",
+        first_name: "",
+        last_name: "",
+        balance : -1
+    }
+    res.status(200).send(JSON.stringify({
+        "message": "Logout successfully"
+    }))
+})
+
+interface userId {
+    ID: number
+}
+
 app.post('/register', async (req, res) => {
     const userName = req.body.user_name;
-    var count: number = await new Promise((resolve, reject) => {
-        db.get("SELECT COUNT(*) FROM Users WHERE user_name = ?", [userName], (err: Error | null, row: number) => {
+    var count: userId = await new Promise((resolve, reject) => {
+        db.get("SELECT ID FROM Users WHERE user_name = ?", [userName], (err: Error | null, row: userId) => {
             if (err) {
                 reject(err);
                 res.status(500).send(JSON.stringify({
@@ -84,7 +121,7 @@ app.post('/register', async (req, res) => {
             resolve(row);
         })
     })
-    if (count > 0) {
+    if (count != undefined) {
         res.status(400).send(JSON.stringify({
             "message": "Username already existed"
         }))
@@ -100,12 +137,13 @@ app.post('/register', async (req, res) => {
         const question2 = req.body.question2;
         const question3 = req.body.question3;
 
-        db.run("INSERT INTO Users (user_name, password, first_name, last_name, secure_question1, secure_question2, secure_question3, answer1, answer2, answer3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [userName, password, firstName, lastName, question1, question2, question3, answer1, answer2, answer3], function (err) {
+        db.run("INSERT INTO Users (user_name, password, first_name, last_name, question1, question2, question3, answer1, answer2, answer3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [userName, password, firstName, lastName, question1, question2, question3, answer1, answer2, answer3], function (err) {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error adding data into database",
                 }))
                 console.log(err.message);
+                return;
             }
             else {
                 res.status(200).send(JSON.stringify({
@@ -117,23 +155,121 @@ app.post('/register', async (req, res) => {
     }
 })
 
+interface carPrice {
+    price: number
+}
+interface carRenter {
+    renter: string
+}
 app.put('/rent', (req, res) => {
-    if (!loggedIn) {
+    if (!loggedIn || !currentUser) {
         res.status(400).send(JSON.stringify({
             "message": "Function only available after logging in"
         }))
     }
     else {
         const carId = req.body.carId;
-        db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [currentUser?.ID, carId], function (err) {
-            if (err) {
+        db.get(`SELECT renter FROM Cars WHERE ID = ?`, [carId], function (err, row: carRenter) {
+            if (row.renter != null) {
                 res.status(400).send(JSON.stringify({
-                    "message": "Error modifying database record"
+                    "message": "Car is already rented"
                 }))
-                console.log(err.message);
+                return;
             }
+            db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [currentUser.ID, carId], function (err) {
+                if (err) {
+                    res.status(500).send(JSON.stringify({
+                        "message": "Error modifying database record"
+                    }))
+                    console.log(err.message);
+                    return;
+                }
+                db.get(`SELECT price FROM Cars WHERE ID = ?`, [carId], function (err, row: carPrice) {
+                    if (err) {
+                        res.status(500).send(JSON.stringify({
+                            "message": "Error retrieving data from database"
+                        }))
+                        console.log(err.message);
+                        return;
+                    }
+                    db.run(`UPDATE Users SET balance = balance + ? WHERE ID = ?`, [row.price, currentUser.ID], function (err) {
+                        if (err) {
+                            res.status(500).send(JSON.stringify({
+                                "message": "Error adding balance to user record"
+                            }))
+                            console.log(err.message);
+                            return;
+                        }
+                        db.run(`INSERT INTO Log VALUES (NULL, 'rent', ?, ?)`, [currentUser.ID, carId], function (err) {
+                            if (err) {
+                                res.status(500).send(JSON.stringify({
+                                    "message": "Error creating log entry"
+                                }))
+                                console.log(err.message);
+                                return;
+                            }
+                            res.status(200).send(JSON.stringify({
+                                "message": "Rent successfully"
+                            }))
+                        })
+                    })
+                })
+            })
         })
     }
+})
+
+app.put('/forgotpassword', (req, res) => {
+    db.get(`SELECT question1, question2, question3 FROM Users WHERE user_name = ?`, [req.body.user_name], function (err, row) {
+        if (err) {
+            res.status(500).send(JSON.stringify({
+                "message": "Error retreiving data from database"
+            }))
+            console.log(err.message);
+            return;
+        }
+        res.status(200).send(JSON.stringify(row))
+    })
+})
+
+app.post('/forgotpassword', (req, res) => {
+    const userAnswer: recoveryAnswers = {
+        answer1: req.body.answer1,
+        answer2: req.body.answer2,
+        answer3: req.body.answer3
+    }
+    db.get(`SELECT answer1, answer2, answer3 FROM Users WHERE user_name = ?`, [req.body.user_name], function (err, row: recoveryAnswers) {
+        if (err) {
+            res.status(500).send(JSON.stringify({
+                "message": "Error retreiving data from database"
+            }))
+            console.log(err.message);
+            return;
+        }
+        var authenticateAnswers = new layer1(row);
+        var allCorrect = authenticateAnswers.checkAnswer(userAnswer);
+        if (!allCorrect) {
+            res.status(400).send(JSON.stringify({
+                "message": "One or more answers are wrong"
+            }));
+        }
+        else {
+            db.run(`UPDATE Users SET password = ? WHERE user_name = ?`, [req.body.password, req.body.user_name], function (err) {
+                if (err) {
+                    res.status(500).send(JSON.stringify({
+                        "message": "Error retreiving data from database"
+                    }))
+                    console.log(err.message);
+                    return;
+                }
+                else {
+                    res.status(200).send(JSON.stringify({
+                        "message": "Password changed successfully"
+                    }))
+                }
+            })
+        }
+    })
 })
 
 app.listen(PORT, () => {
