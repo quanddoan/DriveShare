@@ -1,13 +1,23 @@
 import express, { Express, Request, Response } from 'express'
 import sqlite3 from 'sqlite3'
+import session from 'express-session'
 import { userRecord, userAuthenticator } from './authenticator';
 import { layer1, recoveryAnswers } from "./passwordRecovery";
 
 const app: Express = express();
 const db = new sqlite3.Database('database.db');
 const PORT = 3000;
+declare module "express-session" {
+    interface SessionData {
+        user : userRecord
+    }
+}
 
 app.use(express.json());
+app.use(session({
+    secret: "keyboard-cat",
+    cookie: {}
+}))
 
 interface carInfo {
     ID: number;
@@ -18,19 +28,9 @@ interface carInfo {
     lister: number;
 }
 
-var array: carInfo[] = [];
-var currentUser: userRecord = {
-    ID: -1,
-    user_name: "",
-    password: "",
-    first_name: "",
-    last_name: "",
-    balance : -1
-};
-let loggedIn = false;
 
 app.get('/', (req, res) => {
-    array = [];
+    var array: carInfo[] = [];
     res.setHeader('Content-Type', 'application/json');
     db.all("SELECT * FROM Cars", [], (err, rows: carInfo[]) => {
         if (err) {
@@ -62,7 +62,7 @@ app.post('/login', (req, res) => {
         if (row) {
             let newObject = userAuthenticator.createObject(row);
             if (newObject.authenticate(userName, password)) {
-                currentUser = {
+                var currentUser : userRecord = {
                     ID: row.ID,
                     user_name: row.user_name,
                     password: "",
@@ -70,7 +70,7 @@ app.post('/login', (req, res) => {
                     last_name: row.last_name,
                     balance : row.balance
                 };
-                loggedIn = true;
+                req.session.user = currentUser;
                 res.status(200).send(JSON.stringify(currentUser))
             }
             else{
@@ -88,18 +88,11 @@ app.post('/login', (req, res) => {
 })
 
 app.get('/logout', (req, res) => {
-    loggedIn = false;
-    currentUser = {
-        ID: -1,
-        user_name: "",
-        password: "",
-        first_name: "",
-        last_name: "",
-        balance : -1
-    }
-    res.status(200).send(JSON.stringify({
-        "message": "Logout successfully"
-    }))
+    req.session.destroy(() => {
+        res.status(200).send(JSON.stringify({
+            "message": "Logout successfully"
+        }))
+    });
 })
 
 interface userId {
@@ -162,13 +155,14 @@ interface carRenter {
     renter: string
 }
 app.put('/rent', (req, res) => {
-    if (!loggedIn || !currentUser) {
+    if (!(req.session.user)) {
         res.status(400).send(JSON.stringify({
             "message": "Function only available after logging in"
         }))
     }
     else {
         const carId = req.body.carId;
+        const currentUser = req.session.user;
         db.get(`SELECT renter FROM Cars WHERE ID = ?`, [carId], function (err, row: carRenter) {
             if (row.renter != null) {
                 res.status(400).send(JSON.stringify({
