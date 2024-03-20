@@ -5,6 +5,7 @@ import { userRecord, userAuthenticator } from './authenticator';
 import { layer1, recoveryAnswers } from "./passwordRecovery";
 import { SQLBuilder } from './carBuilder';
 import { proxyPayment, realPayment } from './paymentProxy';
+import { request } from 'http';
 const app: Express = express();
 const db = new sqlite3.Database('database.db');
 const PORT = 3000;
@@ -48,6 +49,15 @@ interface getBalance {
     balance: number
 }
 
+interface getLister{
+    lister : number
+}
+
+interface getRequest {
+    carID: number,
+    userID: number
+}
+
 app.get('/', (req, res) => {
     try {
         var array: carInfo[] = [];
@@ -77,7 +87,7 @@ app.post('/login', (req, res) => {
     try {
         const userName = req.body.user_name;
         const password = req.body.password;
-        db.get("SELECT ID, user_name, password, first_name, last_name, balance FROM Users WHERE user_name = ?", [userName], (err: Error | null, row: userRecord) => {
+        db.all("SELECT ID, user_name, password, first_name, last_name, balance FROM Users", [], function (err, rows: userRecord[]) {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error retrieving data from database",
@@ -85,25 +95,18 @@ app.post('/login', (req, res) => {
                 console.log(err.message);
                 return;
             }
-            if (row) {
-                let newObject = userAuthenticator.createObject(row);
-                if (newObject.authenticate(userName, password)) {
-                    var currentUser: userRecord = {
-                        ID: row.ID,
-                        user_name: row.user_name,
-                        password: "",
-                        first_name: row.first_name,
-                        last_name: row.last_name,
-                        balance: row.balance
-                    };
-                    req.session.user = currentUser;
-                    res.status(200).send(JSON.stringify(currentUser))
-                }
-                else {
-                    res.status(404).send(JSON.stringify({
-                        "message": "Wrong username of password"
-                    }))
-                }
+            let newObject = userAuthenticator.createObject(rows);
+            if (newObject.authenticate(userName, password)) {
+                var currentUser: userRecord;
+                rows.forEach((row) => {
+                    if (row.user_name == userName) {
+                        currentUser = row;
+                        req.session.user = currentUser;
+                        res.status(200).send(JSON.stringify(currentUser));
+                        return;
+                    }
+                })
+                return;
             }
             else {
                 res.status(404).send(JSON.stringify({
@@ -195,6 +198,10 @@ app.post('/register', async (req, res) => {
                     res.status(200).send(JSON.stringify({
                         "message": "Registration successful"
                     }))
+
+                    db.all("SELECT ID, user_name, password, first_name, last_name, balance FROM Users", [], function (err, rows: userRecord[]) {
+                        userAuthenticator.createObject(rows);
+                    })
                 }
             })
 
@@ -228,21 +235,110 @@ app.put('/rent', (req, res) => {
             const startDate = req.body.start_date;
             const endDate = req.body.end_date;
             db.get(`SELECT renter FROM Cars WHERE ID = ?`, [carId], function (err, row: carRenter) {
+                if (err) {
+                    res.status(500).send(JSON.stringify({
+                        "message": "Error retrieving data from database"
+                    }))
+                    return;
+                }
+
                 if (row.renter != null) {
                     res.status(400).send(JSON.stringify({
                         "message": "Car is already rented"
                     }))
                     return;
                 }
-                db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [currentUser.ID, carId], function (err) {
+                db.run(`INSERT INTO Requests (userID, carID) VALUES (?, ?)`, [currentUser.ID, carId], function (err) {
                     if (err) {
                         res.status(500).send(JSON.stringify({
-                            "message": "Error modifying database record"
+                            "message": "Error adding booking request"
                         }))
                         console.log(err.message);
                         return;
                     }
-                    db.get(`SELECT price FROM Cars WHERE ID = ?`, [carId], function (err, row: carPrice) {
+                    db.run(`INSERT INTO Log VALUES (NULL, 'book request', ?, ?, ?, ?)`, [currentUser.ID, carId, startDate, endDate], function (err) {
+                        if (err) {
+                            res.status(500).send(JSON.stringify({
+                                "message": "Error creating log entry"
+                            }))
+                            console.log(err.message);
+                            return;
+                        }
+                        res.status(200).send(JSON.stringify({
+                            "message": "Booking request successful"
+                        }))
+                    })
+                })
+            })
+        }
+    }
+    catch (e) {
+        res.status(500).send(JSON.stringify({
+            "message": "Server error"
+        }))
+    }
+})
+
+app.put('/confirm', (req, res) => {
+    try {
+        if (!req.session.user) {
+            res.status(400).send(JSON.stringify({
+                "message": "Function only available after logging in"
+            }))
+            return;
+        }
+
+        if (req.body.requestID == undefined) {
+            res.status(400).send(JSON.stringify({
+                "message": "Bad request"
+            }))
+            return;
+        }
+
+        const requestID = req.body.requestID;
+        db.get(`SELECT carID, userID FROM Requests WHERE requestID = ?;`, [requestID], function (err, row: getRequest) {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error retrieving data from database"
+                }))
+                console.log(err.message);
+                return;
+            }
+
+            if (row == undefined){
+                res.status(400).send(JSON.stringify({
+                    "message": "Request not found"
+                }))
+                return;
+            }
+
+            let actor = row.userID;
+            let vehicle = row.carID;
+            db.get(`SELECT lister FROM Cars WHERE ID = ?`, [vehicle], function (err, row: getLister) {
+                if (err) {
+                    res.status(500).send(JSON.stringify({
+                        "message": "Error retrieving data from database"
+                    }))
+                    console.log(err.message);
+                    return;
+                }
+                if (req.session.user?.ID != row.lister) {
+                    res.status(400).send(JSON.stringify({
+                        "message": "Only lister can confirm booking request"
+                    }))
+                    return;
+                }
+
+                db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [actor, vehicle], function (err) {
+                    if (err) {
+                        res.status(500).send(JSON.stringify({
+                            "message": "Error retrieving data from database"
+                        }))
+                        console.log(err.message);
+                        return;
+                    }
+
+                    db.run(`UPDATE Users SET balance = balance + (SELECT Price FROM Cars WHERE Cars.ID = ?) WHERE Users.ID = ?`, [vehicle, actor], function (err) {
                         if (err) {
                             res.status(500).send(JSON.stringify({
                                 "message": "Error retrieving data from database"
@@ -250,31 +346,34 @@ app.put('/rent', (req, res) => {
                             console.log(err.message);
                             return;
                         }
-                        db.run(`UPDATE Users SET balance = balance + ? WHERE ID = ?`, [row.price, currentUser.ID], function (err) {
+
+                        db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('confirm', ?, ?)`, [req.session.user?.ID, vehicle], function (err) {
                             if (err) {
                                 res.status(500).send(JSON.stringify({
-                                    "message": "Error adding balance to user record"
+                                    "message": "Error retrieving data from database"
                                 }))
                                 console.log(err.message);
                                 return;
                             }
-                            db.run(`INSERT INTO Log VALUES (NULL, 'rent', ?, ?, ?, ?)`, [currentUser.ID, carId, startDate, endDate], function (err) {
+
+                            db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
                                 if (err) {
                                     res.status(500).send(JSON.stringify({
-                                        "message": "Error creating log entry"
+                                        "message": "Error retrieving data from database"
                                     }))
                                     console.log(err.message);
                                     return;
                                 }
                                 res.status(200).send(JSON.stringify({
-                                    "message": "Rent successfully"
+                                    "message" : "Booking approved"
                                 }))
                             })
                         })
                     })
+
                 })
             })
-        }
+        })
     }
     catch (e) {
         res.status(500).send(JSON.stringify({
@@ -384,10 +483,10 @@ app.post('/list', async (req, res) => {
                 }))
                 return;
             }
-            
+
             sql = builderObj.getResult();
 
-            if (row && req.body.carId != -1){
+            if (row && req.body.carId != -1) {
                 builderObj.setCarId(req.body.carId);
                 sql = builderObj.getUpdateSql();
             }
@@ -400,7 +499,7 @@ app.post('/list', async (req, res) => {
                     console.log(err.message);
                     return;
                 }
-                
+
                 sql = builderObj.getLogSql();
                 db.run(sql, function (err) {
                     if (err) {
@@ -412,7 +511,7 @@ app.post('/list', async (req, res) => {
                     }
 
                     res.status(200).send(JSON.stringify({
-                        "message" : "Listing successful"
+                        "message": "Listing successful"
                     }))
                 })
             })

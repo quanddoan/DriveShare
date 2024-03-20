@@ -10,17 +10,10 @@ interface userRecord {
 class userAuthenticator {
     private static authenticator: userAuthenticator;
     private constructor() {
-        this.data = {
-            ID : -1,
-            user_name : "",
-            last_name : "",
-            first_name : "",
-            password : "",
-            balance : -1
-        }
+        this.data = []
     };
-    private data: userRecord;
-    public static createObject(record: userRecord): userAuthenticator {
+    private data: userRecord[];
+    public static createObject(record: userRecord[]): userAuthenticator {
         if (!userAuthenticator.authenticator) {
             userAuthenticator.authenticator = new userAuthenticator();
         }
@@ -28,13 +21,16 @@ class userAuthenticator {
         return userAuthenticator.authenticator;
     }
     public authenticate(userName: string, passwd: string) {
-
-        if (userName == userAuthenticator.authenticator.data.user_name && passwd == userAuthenticator.authenticator.data.password) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        var result = false;
+        this.data.forEach((record) => {
+            if (record.user_name == userName){
+                if (record.password == passwd){
+                    result = true;
+                    return;
+                }
+            }
+        })
+        return result;
     }
 }
 
