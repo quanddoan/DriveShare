@@ -117,7 +117,60 @@ app.post('/register', async (req, res) => {
         
     }
 })
+app.post('/review', (req: Request, res: Response) => {
+    if (!loggedIn || !currentUser) {
+        res.status(401).send(JSON.stringify({
+            "message" : "Unauthorized access"
+        }));
+        return;
+    }
 
+    const { Rating, Review, CarID } = req.body;
+    const ActorID = currentUser.ID;
+
+    db.run(
+        "INSERT INTO Reviews (ActorID, Rating, Review, CarID) VALUES (?, ?, ?, ?);",
+        [ActorID, Rating, Review, CarID],
+        function (err: Error | null) {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error adding review to database",
+                    "error": err.message
+                }));
+            } else {
+                res.status(200).send(JSON.stringify({
+                    "message": "Review added successfully",
+                    "reviewId": this.lastID
+                }));
+            }
+        }
+    );
+})
+app.get('/history', (req: Request, res: Response) => {
+    if (!loggedIn || !currentUser) {
+        res.status(401).send(JSON.stringify({
+            "message": "Unauthorized access"
+        }));
+        return;
+    }
+
+    const ActorID = currentUser.ID; 
+
+    db.all(
+        "SELECT * FROM Log WHERE Actor = ?;",
+        [ActorID],
+        (err: Error | null, rows: Array<any>) => {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error retrieving history from database",
+                    "error": err.message
+                }));
+            } else {
+                res.status(200).send(JSON.stringify(rows));
+            }
+        }
+    );
+})
 app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);
 })
