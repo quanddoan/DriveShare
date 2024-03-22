@@ -5,7 +5,7 @@ import { userRecord, userAuthenticator } from './authenticator';
 import { layer1, recoveryAnswers } from "./passwordRecovery";
 import { SQLBuilder } from './carBuilder';
 import { proxyPayment, realPayment } from './paymentProxy';
-import { request } from 'http';
+import { notification, bookRequestEventListener, confirmRequestEventListener, reviewPostEventListener } from './notificationObserver';
 const app: Express = express();
 const db = new sqlite3.Database('database.db');
 const PORT = 3000;
@@ -37,12 +37,13 @@ interface userId {
     ID: number
 }
 
-interface carPrice {
-    price: number
+interface carID {
+    ID: number
 }
 
-interface carRenter {
-    renter: string
+interface carActor {
+    renter: number,
+    lister : number
 }
 
 interface getBalance {
@@ -57,6 +58,7 @@ interface getRequest {
     carID: number,
     userID: number
 }
+
 
 app.get('/', (req, res) => {
     try {
@@ -234,7 +236,7 @@ app.put('/rent', (req, res) => {
             const currentUser = req.session.user;
             const startDate = req.body.start_date;
             const endDate = req.body.end_date;
-            db.get(`SELECT renter FROM Cars WHERE ID = ?`, [carId], function (err, row: carRenter) {
+            db.get(`SELECT renter, lister FROM Cars WHERE ID = ?`, [carId], function (err, row: carActor) {
                 if (err) {
                     res.status(500).send(JSON.stringify({
                         "message": "Error retrieving data from database"
@@ -248,6 +250,7 @@ app.put('/rent', (req, res) => {
                     }))
                     return;
                 }
+                var carOwner = row.lister;
                 db.run(`INSERT INTO Requests (userID, carID) VALUES (?, ?)`, [currentUser.ID, carId], function (err) {
                     if (err) {
                         res.status(500).send(JSON.stringify({
@@ -267,6 +270,12 @@ app.put('/rent', (req, res) => {
                         res.status(200).send(JSON.stringify({
                             "message": "Booking request successful"
                         }))
+                        var listerEventSubscribe = new bookRequestEventListener();
+                        listerEventSubscribe.markHappened(carOwner, carId);
+                        var renterEventSubscribe = new confirmRequestEventListener();
+                        renterEventSubscribe.subscribe(carId, currentUser.ID);
+                        var reviewEventSubscribe = new reviewPostEventListener();
+                        reviewEventSubscribe.subscribe(carId, currentUser.ID);
                     })
                 })
             })
@@ -312,7 +321,7 @@ app.put('/confirm', (req, res) => {
                 return;
             }
 
-            let actor = row.userID;
+            let requester = row.userID;
             let vehicle = row.carID;
             db.get(`SELECT lister FROM Cars WHERE ID = ?`, [vehicle], function (err, row: getLister) {
                 if (err) {
@@ -329,7 +338,7 @@ app.put('/confirm', (req, res) => {
                     return;
                 }
 
-                db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [actor, vehicle], function (err) {
+                db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [requester, vehicle], function (err) {
                     if (err) {
                         res.status(500).send(JSON.stringify({
                             "message": "Error retrieving data from database"
@@ -338,7 +347,7 @@ app.put('/confirm', (req, res) => {
                         return;
                     }
 
-                    db.run(`UPDATE Users SET balance = balance + (SELECT Price FROM Cars WHERE Cars.ID = ?) WHERE Users.ID = ?`, [vehicle, actor], function (err) {
+                    db.run(`UPDATE Users SET balance = balance + (SELECT Price FROM Cars WHERE Cars.ID = ?) WHERE Users.ID = ?`, [vehicle, requester], function (err) {
                         if (err) {
                             res.status(500).send(JSON.stringify({
                                 "message": "Error retrieving data from database"
@@ -367,6 +376,8 @@ app.put('/confirm', (req, res) => {
                                 res.status(200).send(JSON.stringify({
                                     "message" : "Booking approved"
                                 }))
+                                var renterEventNotify = new confirmRequestEventListener();
+                                renterEventNotify.markHappened(requester, vehicle);
                             })
                         })
                     })
@@ -458,7 +469,8 @@ app.post('/list', async (req, res) => {
             return;
         }
         var builderObj = new SQLBuilder();
-        builderObj.setListerId(req.session.user.ID);
+        var user = req.session.user.ID;
+        builderObj.setListerId(user);
         builderObj.setBrand(req.body.brand);
         builderObj.setType(req.body.type);
         builderObj.setYear(req.body.year);
@@ -510,9 +522,25 @@ app.post('/list', async (req, res) => {
                         return;
                     }
 
-                    res.status(200).send(JSON.stringify({
-                        "message": "Listing successful"
-                    }))
+                    db.get(`SELECT ID FROM Cars WHERE VIN = ?`, [req.body.VIN], function (err, row : carID) {
+                        if (err){
+                            res.status(500).send(JSON.stringify({
+                                "message": "Error retreiving data from database"
+                            }))
+                            console.log(err.message);
+                            return;
+                        }
+
+                        var carID = row.ID;
+                        var eventSubscribe1 = new bookRequestEventListener();
+                        eventSubscribe1.subscribe(carID, user);
+                        var eventSubscribe2 = new reviewPostEventListener();
+                        eventSubscribe2.subscribe(carID, user);
+
+                        res.status(200).send(JSON.stringify({
+                            "message": "Listing successful"
+                        }))
+                    })
                 })
             })
         })
@@ -588,6 +616,62 @@ app.put('/payment', (req, res) => {
             "message": "Server error"
         }))
     }
+})
+
+app.get('/notification', (req, res) => {
+    if (!req.session.user?.ID){
+        res.status(400).send(JSON.stringify({
+            "message" : "Function only available after loggin in"
+        }))
+        return;
+    }
+
+    var userId = req.session.user.ID;
+    var renterNotify = new confirmRequestEventListener();
+    var listerNotify = new bookRequestEventListener();
+    var reviewNotify = new reviewPostEventListener();
+
+    var totalNotifications : notification[] = [];
+    totalNotifications = renterNotify.update(userId);
+    var nextNotification1 = listerNotify.update(userId);
+    
+    for (var i = 0; i < nextNotification1.length; i++){
+        totalNotifications.push(nextNotification1[i]);
+    }
+
+    var nextNotification2 = reviewNotify.update(userId);
+
+    for (var i = 0; i < nextNotification2.length; i++){
+        totalNotifications.push(nextNotification2[i]);
+    }
+
+    res.status(200).send(JSON.stringify(totalNotifications));
+})
+
+app.get('/request', (req, res) => {
+    if (!req.session.user){
+        res.status(400).send(JSON.stringify({
+            "message" : "Function only available after logging in"
+        }))
+        return;
+    }
+
+    var currentUserID = req.session.user.ID;
+    db.all(`SELECT requestID, carID, first_name, last_name FROM (Requests, Users) WHERE Users.ID = userID AND carID IN (SELECT ID FROM Cars WHERE lister = ?);`, [currentUserID], function (err , rows) {
+        if (err) {
+            res.status(500).send(JSON.stringify({
+                "message" : "Error retrieving data from database"
+            }))
+            console.log(err.message);
+            return;
+        }
+        
+        var requestDetails : Array<any> = [];
+        rows.forEach((row) => {
+            requestDetails.push(row);
+        })
+        res.status(200).send(JSON.stringify(requestDetails));
+    })
 })
 
 app.listen(PORT, () => {
