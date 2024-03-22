@@ -3,33 +3,34 @@ interface userRecord {
     user_name: string,
     password: string,
     first_name: string,
-    last_name: string
+    last_name: string,
+    balance: number
 }
 
 class userAuthenticator {
-    private static authenticator: userAuthenticator | null;
-    private constructor(record: userRecord) {
-        userAuthenticator.authenticator = this;
-        userAuthenticator.data = record;
+    private static authenticator: userAuthenticator;
+    private constructor() {
+        this.data = []
     };
-    private static data: userRecord;
-    public static createObject(record: userRecord): userAuthenticator {
-        if (userAuthenticator.authenticator == null) {
-            return new userAuthenticator(record);
+    private data: userRecord[];
+    public static createObject(record: userRecord[]): userAuthenticator {
+        if (!userAuthenticator.authenticator) {
+            userAuthenticator.authenticator = new userAuthenticator();
         }
-        else {
-            userAuthenticator.data = record;
-            return userAuthenticator.authenticator;
-        }
+        userAuthenticator.authenticator.data = record;
+        return userAuthenticator.authenticator;
     }
     public authenticate(userName: string, passwd: string) {
-
-        if (userName == userAuthenticator.data.user_name && passwd == userAuthenticator.data.password) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        var result = false;
+        this.data.forEach((record) => {
+            if (record.user_name == userName){
+                if (record.password == passwd){
+                    result = true;
+                    return;
+                }
+            }
+        })
+        return result;
     }
 }
 
