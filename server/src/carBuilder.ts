@@ -1,3 +1,4 @@
+//Abstract builder, each car consists of listerID, brand, type, year, price, mileage, VIN
 abstract class Builder{
     public abstract setListerId(num : number) : void;
     public abstract setBrand(text: string) : void;
@@ -9,6 +10,7 @@ abstract class Builder{
     public abstract setCarId(num : number) : void;
 }
 
+//Build SQL statements using builder pattern
 class SQLBuilder extends Builder{
     private insertSql : string;
     private selectSql : string;

@@ -4,6 +4,7 @@ abstract class rentalPayment {
     public abstract processPayment(from : number, amount : number) : boolean;
 }
 
+//Actual payment
 class realPayment extends rentalPayment {
     private db : sqlite3.Database;
     constructor(obj : sqlite3.Database) {
@@ -21,6 +22,7 @@ class realPayment extends rentalPayment {
     }
 }
 
+//Proxy payment
 class proxyPayment extends rentalPayment {
     private object : rentalPayment;
     constructor(paymentObj : rentalPayment) {

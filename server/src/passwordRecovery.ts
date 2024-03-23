@@ -6,6 +6,7 @@ interface recoveryAnswers{
     answer3 : string
 };
 
+//Abstract handler
 abstract class passwordRecovery{
     protected answer = "";
     protected successor : passwordRecovery | null;
@@ -18,6 +19,7 @@ abstract class passwordRecovery{
     abstract checkAnswer(as : recoveryAnswers) : boolean;
 };
 
+//First layer of handler checks for first secure question
 class layer1 extends passwordRecovery{
     constructor(correctAnswers : recoveryAnswers){
         super(correctAnswers);
@@ -34,6 +36,7 @@ class layer1 extends passwordRecovery{
     }
 };
 
+//Second layer of hanlder
 class layer2 extends passwordRecovery{
     constructor(correctAnswers : recoveryAnswers){
         super(correctAnswers);
@@ -50,6 +53,7 @@ class layer2 extends passwordRecovery{
     }
 }
 
+//Final layer of hanlder
 class layer3 extends passwordRecovery{
     constructor(correctAnswers : recoveryAnswers){
         super(correctAnswers);

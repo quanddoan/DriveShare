@@ -9,6 +9,7 @@ interface subscriberObj {
     happened: boolean
 }
 
+//
 class notifier {
     private notificationObj: notification = {
         notification: ""
@@ -19,6 +20,7 @@ class notifier {
     }
 }
 
+//Abstract subscriber
 abstract class eventListener {
     public abstract subscribe(carId: number, userID: number): void;
     public abstract unsubscribe(element: subscriberObj): void;
@@ -26,6 +28,7 @@ abstract class eventListener {
     public abstract markHappened(user: number, vehicle: number): void;
 }
 
+//Listener for booking
 class bookRequestEventListener extends eventListener {
     private static subscribers: subscriberObj[] = [];
     public subscribe(carId: number, userID: number): void {
@@ -75,6 +78,7 @@ class bookRequestEventListener extends eventListener {
     }
 }
 
+//Listener for request confirmation
 class confirmRequestEventListener extends eventListener {
     private static subscribers: subscriberObj[] = [];
     public subscribe(carId: number, userID: number): void {
@@ -124,6 +128,7 @@ class confirmRequestEventListener extends eventListener {
     }
 }
 
+//Listener for review posting
 class reviewPostEventListener extends eventListener {
     private static subscribers: subscriberObj[] = [];
     public subscribe(carId: number, userID: number): void {
