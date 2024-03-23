@@ -855,8 +855,8 @@ app.get('/history', (req: Request, res: Response) => {
                 if (err) {
                     res.status(500).send(JSON.stringify({
                         "message": "Error retrieving history from database",
-                        "error": err.message
                     }));
+                    console.log(err.message);
                 } else {
                     res.status(200).send(JSON.stringify(rows));
                 }
@@ -864,6 +864,100 @@ app.get('/history', (req: Request, res: Response) => {
         );
     }
     catch (e) {
+        res.status(500).send(JSON.stringify({
+            "message": "Server error"
+        }))
+        console.log(e)
+    }
+})
+
+app.post('/mail', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    try{
+        if (!req.session.user){
+            res.status(401).send(JSON.stringify({
+                "message": "Unauthorized access"
+            }));
+            return;
+        }
+
+        var sender = req.session.user.ID;
+        var receiver = req.body.to;
+        var message = req.body.message;
+
+        db.get(`SELECT ID FROM Users WHERE user_name = ?`, [receiver], function (err, row : userId) {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error retrieving history from database",
+                }));
+                console.log(err.message);
+                return;
+            }
+
+            var receiverID = row.ID;
+            var mailListener = new eventListener();
+            mailListener.subscribe(sender, receiverID, "mail");
+
+            db.run(`INSERT INTO Mail (sender, receiver, message) VALUES (?, ?, ?)`, [sender, receiverID, message], function (err) {
+                if (err) {
+                    res.status(500).send(JSON.stringify({
+                        "message": "Error retrieving history from database",
+                    }));
+                    console.log(err.message);
+                    return;
+                }
+    
+                mailListener.markHappened(receiverID, sender, "mail");
+    
+                res.status(200).send(JSON.stringify({
+                    "message" : "Mail sent"
+                }))
+            })
+        })
+    }
+    catch (e){
+        res.status(500).send(JSON.stringify({
+            "message": "Server error"
+        }))
+        console.log(e)
+    }
+})
+
+app.get('/mail', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    try{
+        if (!req.session.user){
+            res.status(401).send(JSON.stringify({
+                "message": "Unauthorized access"
+            }));
+            return;
+        }
+
+        var user = req.session.user.ID;
+        db.all(`SELECT sender, message FROM Mail WHERE receiver = ?`, [user], function (err, rows) {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error retrieving history from database",
+                }));
+                console.log(err.message);
+                return;
+            }
+
+            db.run(`DELETE FROM Mail WHERE receiver = ?`, [user], function (err) {
+                if (err) {
+                    res.status(500).send(JSON.stringify({
+                        "message": "Error retrieving history from database",
+                    }));
+                    console.log(err.message);
+                    return;
+                }
+
+                res.status(200).send(JSON.stringify(rows));
+            })
+            
+        })
+    }
+    catch (e){
         res.status(500).send(JSON.stringify({
             "message": "Server error"
         }))

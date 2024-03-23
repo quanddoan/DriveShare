@@ -24,16 +24,32 @@ function notify(message: string, carId: number): notification {
     else if (message == "review") {
         notificationObj.notification = `A review for vehicle #${carId} was posted`;
     }
+    else if (message == "mail"){
+        notificationObj.notification = `You have mail from #${carId}`;
+    }
     else {
         notificationObj.notification = `Unrecognized event happened at vehicle #${carId}`;
     }
     return notificationObj;
 }
 
-//Abstract subscriber
-class eventListener {
+abstract class Listener {
+    public abstract subscribe(carId: number, userId: number, event:string) : void;
+    public abstract unsubscribe (element : subscriberObj) : void;
+    public abstract update(user : number): void;
+    public abstract markHappened (user: number, vehicle : number, event : string) : void;
+}
+
+
+//concrete subscriber
+class eventListener extends Listener{
     private static listOfSubscribers: subscriberObj[] = [];
     public subscribe(carId: number, userID: number, event: string): void {
+        var existingSubscriber = this.find(userID, carId, event);
+        //Make sure that only one instance of the same notification is present
+        if (existingSubscriber.length != 0){
+            return;
+        }
         eventListener.listOfSubscribers.push({
             event: event,
             userId: userID,
