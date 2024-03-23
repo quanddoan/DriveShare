@@ -5,8 +5,8 @@ import { userRecord, userAuthenticator } from './authenticator';
 import { layer1, recoveryAnswers } from "./passwordRecovery";
 import { SQLBuilder } from './carBuilder';
 import { proxyPayment, realPayment } from './paymentProxy';
-import { notification, bookRequestEventListener, confirmRequestEventListener, reviewPostEventListener } from './notificationObserver';
-import { start } from 'repl';
+import { notification, eventListener } from './notificationObserver';
+
 const app: Express = express();
 const db = new sqlite3.Database('database.db');
 const PORT = 3000;
@@ -294,12 +294,10 @@ app.put('/rent', (req, res) => {
                             "message": "Booking request successful"
                         }))
                         //Notify observer of event
-                        var listerEventSubscribe = new bookRequestEventListener();
-                        listerEventSubscribe.markHappened(carOwner, carId);
-                        var renterEventSubscribe = new confirmRequestEventListener();
-                        renterEventSubscribe.subscribe(carId, currentUser.ID);
-                        var reviewEventSubscribe = new reviewPostEventListener();
-                        reviewEventSubscribe.subscribe(carId, currentUser.ID);
+                        var eventSubscribe = new eventListener();
+                        eventSubscribe.markHappened(carOwner, carId, "book");
+                        eventSubscribe.subscribe(carId, currentUser.ID, "confirm");
+                        eventSubscribe.subscribe(carId, currentUser.ID, "review");
                     })
                 })
             })
@@ -406,9 +404,9 @@ app.put('/confirm', (req, res) => {
                                 res.status(200).send(JSON.stringify({
                                     "message": "Booking approved"
                                 }))
-                                //Notify observer of event
-                                var renterEventNotify = new confirmRequestEventListener();
-                                renterEventNotify.markHappened(requester, vehicle);
+                                //Notify observer of the confirmation
+                                var eventNotify = new eventListener();
+                                eventNotify.markHappened(requester, vehicle, "confirm");
                             })
                         })
                     })
@@ -575,12 +573,12 @@ app.post('/list', async (req, res) => {
                             console.log(err.message);
                             return;
                         }
-
+                        
+                        //Subscribe lister to booking request observer and review observer
                         var carID = row.ID;
-                        var eventSubscribe1 = new bookRequestEventListener();
-                        eventSubscribe1.subscribe(carID, user);
-                        var eventSubscribe2 = new reviewPostEventListener();
-                        eventSubscribe2.subscribe(carID, user);
+                        var eventSubscribe = new eventListener();
+                        eventSubscribe.subscribe(carID, user, "book");
+                        eventSubscribe.subscribe(carID, user, "review");
 
                         res.status(200).send(JSON.stringify({
                             "message": "Listing successful"
@@ -683,23 +681,10 @@ app.get('/notification', (req, res) => {
 
         //Get all notifications and bundle into an array
         var userId = req.session.user.ID;
-        var renterNotify = new confirmRequestEventListener();
-        var listerNotify = new bookRequestEventListener();
-        var reviewNotify = new reviewPostEventListener();
+        var eventNotify = new eventListener();
 
         var totalNotifications: notification[] = [];
-        totalNotifications = renterNotify.update(userId);
-        var nextNotification1 = listerNotify.update(userId);
-
-        for (var i = 0; i < nextNotification1.length; i++) {
-            totalNotifications.push(nextNotification1[i]);
-        }
-
-        var nextNotification2 = reviewNotify.update(userId);
-
-        for (var i = 0; i < nextNotification2.length; i++) {
-            totalNotifications.push(nextNotification2[i]);
-        }
+        totalNotifications = eventNotify.update(userId);
 
         res.status(200).send(JSON.stringify(totalNotifications));
     }
@@ -783,9 +768,9 @@ app.post('/review', (req: Request, res: Response) => {
                             return;
                         }
 
-                        var reviewSubscribe = new reviewPostEventListener();
-                        reviewSubscribe.markHappened(row.lister, CarID);
-                        reviewSubscribe.markHappened(row.renter, CarID);
+                        var eventSubscribe = new eventListener();
+                        eventSubscribe.markHappened(row.lister, CarID, "review");
+                        eventSubscribe.markHappened(row.renter, CarID, "review");
                         //Create new log entry
                         db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('Review posted', ?, ?)`, [ActorID, CarID], function (err) {
                             if (err) {
@@ -864,7 +849,7 @@ app.get('/history', (req: Request, res: Response) => {
         const ActorID = req.session.user.ID;
         //Retrieve log entries
         db.all(
-            "SELECT * FROM Log WHERE ActorID = ?;",
+            "SELECT * FROM Log WHERE Actor = ?;",
             [ActorID],
             (err: Error | null, rows: Array<any>) => {
                 if (err) {
