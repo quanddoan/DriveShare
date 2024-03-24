@@ -934,7 +934,7 @@ app.get('/mail', (req, res) => {
         }
 
         var user = req.session.user.ID;
-        db.all(`SELECT sender, message FROM Mail WHERE receiver = ?`, [user], function (err, rows) {
+        db.all(`SELECT user_name, first_name, last_name, message FROM (Mail, Users) WHERE receiver = ? AND Users.ID = sender`, [user], function (err, rows) {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error retrieving history from database",
