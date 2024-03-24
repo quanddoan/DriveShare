@@ -18,8 +18,11 @@ function notify(message: string, carId: number): notification {
     if (message == "book") {
         notificationObj.notification = `A booking request for vehicle #${carId} was submitted`;
     }
-    else if (message == "confirm") {
+    else if (message == "approve") {
         notificationObj.notification = `Booking request for vehicle #${carId} was approved`;
+    }
+    else if (message == "deny"){
+        notificationObj.notification = `Booking request for vehicle #${carId} was denied`;
     }
     else if (message == "review") {
         notificationObj.notification = `A review for vehicle #${carId} was posted`;
@@ -78,7 +81,22 @@ class eventListener extends Listener{
         return resultArr;
     }
     public unsubscribe(element: subscriberObj): void {
-        var index = eventListener.listOfSubscribers.indexOf(element);
+        var index;
+        var denyOrApprove = "";
+        if (element.event == "approve"){
+            denyOrApprove = "deny";
+        }
+        if (element.event == "deny"){
+            denyOrApprove = "approve";
+        }
+        if (denyOrApprove != ""){
+            var theOtherConfirmEvent = this.find(element.userId, element.carId, denyOrApprove);
+            theOtherConfirmEvent.forEach((theEvent) => {
+                index = eventListener.listOfSubscribers.indexOf(theEvent);
+                eventListener.listOfSubscribers.splice(index, 1);
+            })
+        }
+        index = eventListener.listOfSubscribers.indexOf(element);
         eventListener.listOfSubscribers.splice(index, 1);
     };
     public update(user: number): notification[] {

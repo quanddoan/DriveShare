@@ -296,7 +296,8 @@ app.put('/rent', (req, res) => {
                         //Notify observer of event
                         var eventSubscribe = new eventListener();
                         eventSubscribe.markHappened(carOwner, carId, "book");
-                        eventSubscribe.subscribe(carId, currentUser.ID, "confirm");
+                        eventSubscribe.subscribe(carId, currentUser.ID, "approve");
+                        eventSubscribe.subscribe(carId, currentUser.ID, "deny");
                         eventSubscribe.subscribe(carId, currentUser.ID, "review");
                     })
                 })
@@ -323,7 +324,7 @@ app.put('/confirm', (req, res) => {
             return;
         }
 
-        if (req.body.requestID == undefined) {
+        if (req.body.requestID == undefined || req.body.action == undefined) {
             res.status(400).send(JSON.stringify({
                 "message": "Bad request"
             }))
@@ -331,6 +332,7 @@ app.put('/confirm', (req, res) => {
         }
 
         const requestID = req.body.requestID;
+        const action = req.body.action;
         //Find request
         db.get(`SELECT carID, userID FROM Requests WHERE requestID = ?;`, [requestID], function (err, row: getRequest) {
             if (err) {
@@ -361,21 +363,14 @@ app.put('/confirm', (req, res) => {
                 }
                 if (req.session.user?.ID != row.lister) {
                     res.status(400).send(JSON.stringify({
-                        "message": "Only lister can confirm booking request"
+                        "message": "Only lister can take action on booking request"
                     }))
                     return;
                 }
-                //Update car record to reflect new renter
-                db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [requester, vehicle], function (err) {
-                    if (err) {
-                        res.status(500).send(JSON.stringify({
-                            "message": "Error retrieving data from database"
-                        }))
-                        console.log(err.message);
-                        return;
-                    }
-                    //Debit renter balance
-                    db.run(`UPDATE Users SET balance = balance + (SELECT Price FROM Cars WHERE Cars.ID = ?) WHERE Users.ID = ?`, [vehicle, requester], function (err) {
+
+                if (action == "appove") {
+                    //Update car record to reflect new renter
+                    db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [requester, vehicle], function (err) {
                         if (err) {
                             res.status(500).send(JSON.stringify({
                                 "message": "Error retrieving data from database"
@@ -383,8 +378,8 @@ app.put('/confirm', (req, res) => {
                             console.log(err.message);
                             return;
                         }
-                        //Create new log entry
-                        db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('confirm', ?, ?)`, [req.session.user?.ID, vehicle], function (err) {
+                        //Debit renter balance
+                        db.run(`UPDATE Users SET balance = balance + (SELECT Price FROM Cars WHERE Cars.ID = ?) WHERE Users.ID = ?`, [vehicle, requester], function (err) {
                             if (err) {
                                 res.status(500).send(JSON.stringify({
                                     "message": "Error retrieving data from database"
@@ -392,8 +387,8 @@ app.put('/confirm', (req, res) => {
                                 console.log(err.message);
                                 return;
                             }
-                            //Remove approved request from database
-                            db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
+                            //Create new log entry
+                            db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('approve request', ?, ?)`, [req.session.user?.ID, vehicle], function (err) {
                                 if (err) {
                                     res.status(500).send(JSON.stringify({
                                         "message": "Error retrieving data from database"
@@ -401,17 +396,55 @@ app.put('/confirm', (req, res) => {
                                     console.log(err.message);
                                     return;
                                 }
-                                res.status(200).send(JSON.stringify({
-                                    "message": "Booking approved"
-                                }))
-                                //Notify observer of the confirmation
-                                var eventNotify = new eventListener();
-                                eventNotify.markHappened(requester, vehicle, "confirm");
+                                //Remove approved request from database
+                                db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
+                                    if (err) {
+                                        res.status(500).send(JSON.stringify({
+                                            "message": "Error retrieving data from database"
+                                        }))
+                                        console.log(err.message);
+                                        return;
+                                    }
+                                    res.status(200).send(JSON.stringify({
+                                        "message": "Booking approved"
+                                    }))
+                                    //Notify observer of the confirmation
+                                    var eventNotify = new eventListener();
+                                    eventNotify.markHappened(requester, vehicle, "approve");
+                                })
                             })
                         })
-                    })
 
-                })
+                    })
+                }
+                else if (action == "deny"){
+                    db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('deny request', ?, ?)`, [req.session.user.ID, vehicle], function (err) {
+                        if (err) {
+                            res.status(500).send(JSON.stringify({
+                                "message": "Error retrieving data from database"
+                            }))
+                            console.log(err.message);
+                            return;
+                        }
+
+                        db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
+                            if (err) {
+                                res.status(500).send(JSON.stringify({
+                                    "message": "Error retrieving data from database"
+                                }))
+                                console.log(err.message);
+                                return;
+                            }
+
+                            var eventNotify = new eventListener();
+                            eventNotify.markHappened(requester, vehicle, "deny");
+
+                            res.status(200).send(JSON.stringify({
+                                "message" : "Request has been denied"
+                            }))
+                        })
+                    })
+                }
             })
         })
     }
@@ -573,7 +606,7 @@ app.post('/list', async (req, res) => {
                             console.log(err.message);
                             return;
                         }
-                        
+
                         //Subscribe lister to booking request observer and review observer
                         var carID = row.ID;
                         var eventSubscribe = new eventListener();
@@ -585,6 +618,58 @@ app.post('/list', async (req, res) => {
                         }))
                     })
                 })
+            })
+        })
+    }
+    catch (e) {
+        res.status(500).send(JSON.stringify({
+            "message": "Server error"
+        }))
+        console.log(e);
+    }
+})
+
+app.put('/delist', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    if (!req.session.user) {
+        res.status(401).send(JSON.stringify({
+            "message": "Unauthrorized access"
+        }))
+        return;
+    }
+
+    try {
+        var carId = req.body.carId;
+        var userID = req.session.user.ID;
+
+        db.get(`SELECT lister FROM Cars WHERE ID = ?`, [carId], function (err, row: getLister) {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error retreiving data from database"
+                }))
+                console.log(err.message);
+                return;
+            }
+
+            if (row.lister != userID) {
+                res.status(401).send(JSON.stringify({
+                    "message": "Only car owner can delist"
+                }))
+                return;
+            }
+
+            db.run(`DELETE FROM Cars WHERE ID = ?`, [carId], function (err) {
+                if (err) {
+                    res.status(500).send(JSON.stringify({
+                        "message": "Error retreiving data from database"
+                    }))
+                    console.log(err.message);
+                    return;
+                }
+
+                res.status(200).send(JSON.stringify({
+                    "message": "Delist successfully"
+                }))
             })
         })
     }
@@ -873,8 +958,8 @@ app.get('/history', (req: Request, res: Response) => {
 
 app.post('/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    try{
-        if (!req.session.user){
+    try {
+        if (!req.session.user) {
             res.status(401).send(JSON.stringify({
                 "message": "Unauthorized access"
             }));
@@ -885,7 +970,7 @@ app.post('/mail', (req, res) => {
         var receiver = req.body.to;
         var message = req.body.message;
 
-        db.get(`SELECT ID FROM Users WHERE user_name = ?`, [receiver], function (err, row : userId) {
+        db.get(`SELECT ID FROM Users WHERE user_name = ?`, [receiver], function (err, row: userId) {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error retrieving history from database",
@@ -906,16 +991,16 @@ app.post('/mail', (req, res) => {
                     console.log(err.message);
                     return;
                 }
-    
+
                 mailListener.markHappened(receiverID, sender, "mail");
-    
+
                 res.status(200).send(JSON.stringify({
-                    "message" : "Mail sent"
+                    "message": "Mail sent"
                 }))
             })
         })
     }
-    catch (e){
+    catch (e) {
         res.status(500).send(JSON.stringify({
             "message": "Server error"
         }))
@@ -925,8 +1010,8 @@ app.post('/mail', (req, res) => {
 
 app.get('/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    try{
-        if (!req.session.user){
+    try {
+        if (!req.session.user) {
             res.status(401).send(JSON.stringify({
                 "message": "Unauthorized access"
             }));
@@ -954,10 +1039,10 @@ app.get('/mail', (req, res) => {
 
                 res.status(200).send(JSON.stringify(rows));
             })
-            
+
         })
     }
-    catch (e){
+    catch (e) {
         res.status(500).send(JSON.stringify({
             "message": "Server error"
         }))
