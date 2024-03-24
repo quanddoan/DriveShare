@@ -11,7 +11,7 @@ export const ErrorPage = () => {
         <div>
             <h1>Something went wrong 😢</h1>
             <p>{errorMessage}</p>
-            <button onClick={() => navigate(-1)}>&larr; Go back</button>
+            <button className='border border-black px-3 py-2' onClick={() => navigate(-1)}>&larr; Go back</button>
         </div>
     );
 }
