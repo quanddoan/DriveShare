@@ -709,7 +709,7 @@ app.get('/request', (req, res) => {
 
         var currentUserID = req.session.user.ID;
         //Find requests
-        db.all(`SELECT requestID, carID, start_date, end_date, first_name, last_name FROM (Requests, Users) WHERE Users.ID = userID AND carID IN (SELECT ID FROM Cars WHERE lister = ?);`, [currentUserID], function (err, rows) {
+        db.all(`SELECT requestID, carID, start_date, end_date, first_name, last_name, user_name FROM (Requests, Users) WHERE Users.ID = userID AND carID IN (SELECT ID FROM Cars WHERE lister = ?);`, [currentUserID], function (err, rows) {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error retrieving data from database"
