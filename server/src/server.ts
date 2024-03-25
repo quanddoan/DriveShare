@@ -142,7 +142,10 @@ app.post('/login', (req, res) => {
                         currentUser = row;
                         //Create session user data
                         req.session.user = currentUser;
-                        res.status(200).send(JSON.stringify(currentUser));
+                        res.status(200).send(JSON.stringify({
+                            "message" : `Welcome ${currentUser.first_name} ${currentUser.last_name}`,
+                            "currentUserdata" : currentUser
+                        }));
                         return;
                     }
                 })
