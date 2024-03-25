@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-    
+
     const userName = req.body.user_name;
     const password = req.body.password;
     db.get("SELECT ID, user_name, password, first_name, last_name FROM Users WHERE user_name = ?", [userName], (err: Error | null, row: userRecord) => {
@@ -52,19 +52,12 @@ app.post('/login', (req, res) => {
             return;
         }
         if (row) {
-            const userDataToSend = {
-                ID: row.ID,
-                user_name: row.user_name,
-                first_name: row.first_name,
-                last_name: row.last_name
-            };
             let newObject = userAuthenticator.createObject(row);
             if (newObject.authenticate(userName, password)) {
-                currentUser = row
+                currentUser = row;
                 loggedIn = true;
                 res.status(200).send(JSON.stringify({
-                    "message": `Welcome ${row.first_name}, ${row.last_name}`,
-                    "currentUserdata": userDataToSend
+                    "message": `Welcome ${row.first_name}`
                 }))
             }
         }
