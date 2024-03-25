@@ -50,19 +50,12 @@ app.post('/login', (req, res) => {
             return;
         }
         if (row) {
-            const userDataToSend = {
-                ID: row.ID,
-                user_name: row.user_name,
-                first_name: row.first_name,
-                last_name: row.last_name
-            };
             let newObject = authenticator_1.userAuthenticator.createObject(row);
             if (newObject.authenticate(userName, password)) {
                 currentUser = row;
                 loggedIn = true;
                 res.status(200).send(JSON.stringify({
-                    "message": `Welcome ${row.first_name}, ${row.last_name}`,
-                    "currentUserdata": userDataToSend
+                    "message": `Welcome ${row.first_name}`
                 }));
             }
         }
