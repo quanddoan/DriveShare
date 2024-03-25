@@ -7,6 +7,7 @@ import { SQLBuilder } from './carBuilder';
 import { proxyPayment, realPayment } from './paymentProxy';
 import { notification, eventListener } from './notificationObserver';
 //This change is the previous commit
+//This change is the current commit, both to be reverted
 const app: Express = express();
 const db = new sqlite3.Database('database.db');
 const PORT = 3000;
