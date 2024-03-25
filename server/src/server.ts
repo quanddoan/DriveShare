@@ -6,7 +6,7 @@ import { layer1, recoveryAnswers } from "./passwordRecovery";
 import { SQLBuilder } from './carBuilder';
 import { proxyPayment, realPayment } from './paymentProxy';
 import { notification, eventListener } from './notificationObserver';
-//This change will be reverted
+//This change is the previous commit
 const app: Express = express();
 const db = new sqlite3.Database('database.db');
 const PORT = 3000;
