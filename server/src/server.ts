@@ -62,7 +62,7 @@ interface getRequest {
 }
 
 //Server logic
-
+//Subscribe car owners to listed cars in database
 db.all("SELECT * FROM Cars", [], function (err : Error | null, rows : carInfo[]) {
     if (err){
         console.log(err.message);
@@ -76,7 +76,7 @@ db.all("SELECT * FROM Cars", [], function (err : Error | null, rows : carInfo[])
         eventSubscribe.subscribe(row.ID, row.lister, "review");
     })
 })
-
+//Subscribe requesters to outstanding requests in database
 db.all(`SELECT userID, carID FROM Requests`, [], function (err, rows : getRequest[]) {
     if (err){
         console.log(err.message);
@@ -342,7 +342,7 @@ app.put('/rent', (req, res) => {
     }
 })
 
-//Approve request
+//Approve or deny request
 app.put('/confirm', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
@@ -397,7 +397,7 @@ app.put('/confirm', (req, res) => {
                     }))
                     return;
                 }
-
+                //Handle approval
                 if (action == "approve") {
                     //Update car record to reflect new renter
                     db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [requester, vehicle], function (err) {
@@ -447,6 +447,7 @@ app.put('/confirm', (req, res) => {
 
                     })
                 }
+                //Handle denial
                 else if (action == "deny"){
                     db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('deny request', ?, ?)`, [req.session.user.ID, vehicle], function (err) {
                         if (err) {
@@ -658,7 +659,7 @@ app.post('/list', async (req, res) => {
         console.log(e);
     }
 })
-
+//Take down listed vehicle
 app.put('/delist', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     if (!req.session.user) {
@@ -1037,7 +1038,7 @@ app.post('/mail', (req, res) => {
         console.log(e)
     }
 })
-
+//Retrieving mails
 app.get('/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
@@ -1058,18 +1059,7 @@ app.get('/mail', (req, res) => {
                 return;
             }
 
-            db.run(`DELETE FROM Mail WHERE receiver = ?`, [user], function (err) {
-                if (err) {
-                    res.status(500).send(JSON.stringify({
-                        "message": "Error retrieving history from database",
-                    }));
-                    console.log(err.message);
-                    return;
-                }
-
-                res.status(200).send(JSON.stringify(rows));
-            })
-
+            res.status(200).send(JSON.stringify(rows));
         })
     }
     catch (e) {
