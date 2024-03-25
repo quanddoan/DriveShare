@@ -16,6 +16,9 @@ class userAuthenticator {
             return userAuthenticator.authenticator;
         }
     }
+    static isLoggedIn() {
+        return userAuthenticator.loggedIn;
+    }
     authenticate(userName, passwd) {
         if (userName == userAuthenticator.data.user_name && passwd == userAuthenticator.data.password) {
             return true;
@@ -26,3 +29,4 @@ class userAuthenticator {
     }
 }
 exports.userAuthenticator = userAuthenticator;
+userAuthenticator.loggedIn = false;
