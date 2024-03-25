@@ -62,6 +62,36 @@ interface getRequest {
 }
 
 //Server logic
+
+db.all("SELECT * FROM Cars", [], function (err : Error | null, rows : carInfo[]) {
+    if (err){
+        console.log(err.message);
+        return;
+    }
+
+    var eventSubscribe = new eventListener();
+
+    rows.forEach((row) => {
+        eventSubscribe.subscribe(row.ID, row.lister, "book");
+        eventSubscribe.subscribe(row.ID, row.lister, "review");
+    })
+})
+
+db.all(`SELECT userID, carID FROM Requests`, [], function (err, rows : getRequest[]) {
+    if (err){
+        console.log(err.message);
+        return;
+    }
+
+    var eventSubscribe = new eventListener();
+
+    rows.forEach((row) => {
+        eventSubscribe.subscribe(row.carID, row.userID, "approve");
+        eventSubscribe.subscribe(row.carID, row.userID, "deny");
+        eventSubscribe.subscribe(row.carID, row.userID, "review");
+    })
+})
+
 //Get all listed cars
 app.get('/', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -368,7 +398,7 @@ app.put('/confirm', (req, res) => {
                     return;
                 }
 
-                if (action == "appove") {
+                if (action == "approve") {
                     //Update car record to reflect new renter
                     db.run(`UPDATE Cars SET renter = ? WHERE ID = ?`, [requester, vehicle], function (err) {
                         if (err) {
