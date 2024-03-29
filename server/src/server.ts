@@ -19,7 +19,7 @@ declare module "express-session" {
 app.use(express.json());
 app.use(session({
     secret: "keyboard-cat",
-    cookie: {}
+    cookie: {},
 }))
 
 //Structs used to retrieve data from database in specific formats
@@ -93,7 +93,7 @@ db.all(`SELECT userID, carID FROM Requests`, [], function (err, rows : getReques
 })
 
 //Get all listed cars
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         var array: carInfo[] = [];
@@ -117,6 +117,25 @@ app.get('/', (req, res) => {
         }))
         console.log(e);
     }
+});
+
+app.get('/api/user/:userId/cars', (req, res) => {
+    const userId = req.params.userId; 
+    const sqlQuery = "SELECT * FROM Cars WHERE lister = ?";
+
+    db.all(sqlQuery, [userId], (err, rows) => {
+        if (err) {
+            console.error("Error fetching cars listed by user:", err.message);
+            res.status(500).send(JSON.stringify({ message: "Internal server error" }));
+            return;
+        }
+
+        if (rows.length === 0) {
+            res.status(404).send(JSON.stringify({ message: "No cars found for this user" }));
+        } else {
+            res.status(200).json(rows);
+        }
+    });
 });
 
 //User login
@@ -265,9 +284,47 @@ app.post('/register', async (req, res) => {
         console.log(e);
     }
 })
+// get all cars listed by a specific user, given the userID
+app.get('/api/user/:userId/cars', (req, res) => {
+    const userId = req.params.userId; 
+    const sqlQuery = "SELECT * FROM Cars WHERE lister = ?";
 
+    db.all(sqlQuery, [userId], (err, rows) => {
+        if (err) {
+            console.error("Error fetching cars listed by user:", err.message);
+            res.status(500).send(JSON.stringify({ message: "Internal server error" }));
+            return;
+        }
+
+        if (rows.length === 0) {
+            res.status(404).send(JSON.stringify({ message: "No cars found for this user" }));
+        } else {
+            res.status(200).json(rows);
+        }
+    });
+});
+
+//getting specific car data based on carID 
+app.get('/api/cars/:carID', (req: Request, res: Response) => {
+    const carID = req.params.carID;
+
+    db.get("SELECT * FROM Cars WHERE ID = ?", [carID], (err, row: carInfo) => {
+        if (err) {
+            res.status(500).send(JSON.stringify({
+                "message": "Error retrieving data from database"
+            }));
+            console.log(err.message);
+        } else if (row) {
+            res.status(200).send(JSON.stringify(row));
+        } else {
+            res.status(404).send(JSON.stringify({
+                "message": "Car not found"
+            }));
+        }
+    });
+});
 //Booking request
-app.put('/rent', (req, res) => {
+app.put('/api/rent', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         //Check if user is logged in
@@ -568,7 +625,7 @@ app.post('/forgotpassword', (req, res) => {
 })
 
 //List car for rent
-app.post('/list', async (req, res) => {
+app.post('/api/list', async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {
@@ -581,12 +638,12 @@ app.post('/list', async (req, res) => {
         var builderObj = new SQLBuilder();
         var user = req.session.user.ID;
         builderObj.setListerId(user);
-        builderObj.setBrand(req.body.brand);
-        builderObj.setType(req.body.type);
-        builderObj.setYear(req.body.year);
-        builderObj.setPrice(req.body.price);
-        builderObj.setMileage(req.body.mileage);
-        builderObj.setVIN(req.body.VIN);
+        builderObj.setBrand(req.body.vehicleBrand);
+        builderObj.setType(req.body.vehicleType);
+        builderObj.setYear(req.body.vehicleYear);
+        builderObj.setPrice(req.body.vehiclePrice);
+        builderObj.setMileage(req.body.vehicleMileage);
+        builderObj.setVIN(req.body.vehicleVIN);
 
         //Check if car is already listed and the request is not an adjustment
         var sql = builderObj.getSelectSql();
@@ -632,7 +689,7 @@ app.post('/list', async (req, res) => {
                         return;
                     }
                     //Notify observer of event
-                    db.get(`SELECT ID FROM Cars WHERE VIN = ?`, [req.body.VIN], function (err, row: carID) {
+                    db.get(`SELECT ID FROM Cars WHERE VIN = ?`, [req.body.vehicleVIN], function (err, row: carID) {
                         if (err) {
                             res.status(500).send(JSON.stringify({
                                 "message": "Error retreiving data from database"
@@ -640,7 +697,7 @@ app.post('/list', async (req, res) => {
                             console.log(err.message);
                             return;
                         }
-
+                        console.log("Test testing ",row)
                         //Subscribe lister to booking request observer and review observer
                         var carID = row.ID;
                         var eventSubscribe = new eventListener();
@@ -663,7 +720,7 @@ app.post('/list', async (req, res) => {
     }
 })
 //Take down listed vehicle
-app.put('/delist', (req, res) => {
+app.put('/api/delist', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     if (!req.session.user) {
         res.status(401).send(JSON.stringify({

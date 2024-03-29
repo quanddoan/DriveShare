@@ -10,7 +10,7 @@ export const Header = () => {
     const {isLoggedIn, userData} = useDriveShareContext()
     useEffect(()=>{console.log("Test",userData)},[userData])
     return(
-        <div className=" fixed inset-x-0 top-0 w-full flex flex-row bg-black ">
+        <div className="w-full flex flex-row bg-black mb-7">
             <Link to={"/"}>
                 <img className="h-32 w-32"src={Logo} alt= "DriveShare Logo" />
             </Link>

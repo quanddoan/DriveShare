@@ -18,9 +18,9 @@ export const LoginPage = () => {
         if (isLoggedIn && userData!=null) {
             navigate("/app"); 
         }
-    }, [isLoggedIn, navigate]);
+    }, [isLoggedIn, navigate, userData]);
     return(
-        <div className="flex flex-col justify-center text-center items-center min-h-screen w-full mt-20">
+        <div className="flex flex-col justify-center text-center items-center min-h-screen w-full ">
             <form onSubmit={handleSubmit} className="w-full bg-gray-300 max-w-md p-8  rounded-lg shadow-md">
                 <h1 className="text-2xl font-bold pb-5">Log in </h1>
                 <div>
