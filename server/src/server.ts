@@ -845,7 +845,7 @@ app.put('/payment', (req, res) => {
 })
 
 //Get notification for current user
-app.get('/notification', (req, res) => {
+app.get('/api/notification', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {
@@ -1047,7 +1047,7 @@ app.get('/history', (req: Request, res: Response) => {
     }
 })
 
-app.post('/mail', (req, res) => {
+app.post('/api/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {
@@ -1099,7 +1099,7 @@ app.post('/mail', (req, res) => {
     }
 })
 //Retrieving mails
-app.get('/mail', (req, res) => {
+app.get('/api/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {

@@ -10,6 +10,8 @@ import { MainAppPage } from './Pages/MainAppPage';
 import { DriveShareProvider } from './context/DriveShareProvider';
 import { RentPage } from './Pages/RentPage';
 import { MyListingsPage } from './Pages/MyListingsPage';
+import { NotificationPage } from './Pages/NotificationPage';
+import { MailPage } from './Pages/MailPage';
 function App() {
   const router = createBrowserRouter([
     {path: "/",
@@ -26,8 +28,9 @@ function App() {
       {
         path:"/rent/:carID",
         element:<RentPage/>,
-      }
-      
+      },
+      {path:"/notification", element:<NotificationPage/>},
+      {path:"/mail", element: <MailPage/>}
     ]}
   ])
 

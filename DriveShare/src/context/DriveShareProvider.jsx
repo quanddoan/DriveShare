@@ -79,6 +79,61 @@ const DriveShareProvider = ({children}) => {
         }
     };
 
+    const getNotification = async () => {
+        try {
+            const response = await fetch('/api/notification');
+            if (!response.ok){
+                console.error("Error getting notification: ", response);
+                throw new Error(`Failed to fetch notifications: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (error) {
+            console.error("Fetch error at notification: ", error);
+            throw error;
+        }
+    };
+
+    const getMail = async() => {
+        try{
+            const response = await fetch('/api/mail');
+            if (!response.ok){
+                console.error("Error getting mail: ", response);
+                throw new Error(`Failed to fetch mail: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (error) {
+            console.error("Fetch error at notification: ", error);
+            throw error;
+        }
+    };
+
+    const postMail = async(mailData) => {
+        try{
+            const response = await fetch('/api/mail', {
+                method: 'POST',
+                headers : {
+                    'Content-Type' : 'application/json'
+                },
+                body : JSON.stringify(mailData),
+                credentials : 'include'
+            })
+            if (!response.ok){
+                console.error("Error getting mail: ", response);
+                throw new Error(`Failed to fetch mail: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (error) {
+            console.error("Fetch error at notification: ", error);
+            throw error;
+        }
+    }
+
     const delistCar = async (carId) => {
         try {
           const response = await fetch('/api/delist', {
@@ -197,7 +252,7 @@ const DriveShareProvider = ({children}) => {
 
     return(
         <DriveShareContext.Provider
-        value={{isLoggedIn, userData, login, getCarListings, logout, fetchCars, hostVehicle, getCarInfo, delistCar, rentCar}}>
+        value={{isLoggedIn, userData, login, getCarListings, logout, fetchCars, hostVehicle, getCarInfo, delistCar, rentCar, getNotification, postMail, getMail}}>
             {children}
         </DriveShareContext.Provider>
     )
