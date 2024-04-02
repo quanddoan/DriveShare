@@ -773,7 +773,7 @@ app.put('/api/delist', (req, res) => {
 })
 
 //Balance payment
-app.put('/payment', (req, res) => {
+app.put('/api/payment', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {
@@ -831,7 +831,8 @@ app.put('/payment', (req, res) => {
                 }
 
                 res.status(200).send(JSON.stringify({
-                    "message": `Payment successful. New balance: ${row.balance}`
+                    "message": 'Payment successful',
+                    "balance" : `${row.balance}`
                 }))
             })
         })

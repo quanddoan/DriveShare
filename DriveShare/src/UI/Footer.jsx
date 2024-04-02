@@ -12,6 +12,7 @@ export const Footer = () => {
                 <button onClick={()=>navigate('/mycars')} className="rounded-2xl border-2  px-4 py-6">My Listings</button>
                 <button onClick={()=>navigate('/notification')} className="rounded-2xl border-2  px-4 py-6">Notification</button>
                 <button onClick={()=>navigate('/mail')} className="rounded-2xl border-2  px-4 py-6">Mailbox</button>
+                <button onClick={()=>navigate('/pay')} className="rounded-2xl border-2  px-4 py-6">Pay balance</button>
             </div>
         </div>
     )

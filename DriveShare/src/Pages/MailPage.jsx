@@ -10,6 +10,7 @@ export const MailPage = () => {
     const [mailData, setMailData] = useState();
     const [mailSender, setMailSender] = useState();
     const [mailContent, setMailContent] = useState();
+    const [mailSent, setMailSent] = useState();
 
     if (!isLoggedIn) {
         return (
@@ -38,15 +39,20 @@ export const MailPage = () => {
         setMailContent(message);
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         const allFieldsFilled = Object.values(mailData).every(field => field !== '')
         if (!allFieldsFilled) {
             alert('Please fill all fields')
             return
         }
-        const response = postMail(mailData)
-
+        try{
+            const response = await postMail(mailData)
+            setMailSent(response.message);
+        }
+        catch(e){
+            setMailSent("Something went wrong!");
+        }
     }
 
     const handleChange = (e) =>{
@@ -91,6 +97,7 @@ export const MailPage = () => {
                         
                         <button className="text-white bg-black border mb-5 border-black m-auto rounded-2xl px-3 py-4 mt-6" type="submit">Send</button>
                     </form>
+                    <div className="flex flex-row justify-center text-center items- center text-black font-bold">{mailSent}</div>
                 </div>
                 <div className="flex flex-col justify-center text-center items-center min-h-screen">
                     <span className="text-3xl font-bold" style={{ color: "gray" }}>
@@ -120,6 +127,7 @@ export const MailPage = () => {
                         
                         <button className="text-white bg-black border mb-5 border-black m-auto rounded-2xl px-3 py-4 mt-6" type="submit">Send</button>
                     </form>
+                    <div className="flex flex-row justify-center text-center items- center text-black font-bold">{mailSent}</div>
                 </div>
                 <div className="flex flex-row justify-start text-left items-start">
                     <div className="flex flex-col justify-center text-center items-center" style={{width:'50%'}}>

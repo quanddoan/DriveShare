@@ -12,6 +12,7 @@ import { RentPage } from './Pages/RentPage';
 import { MyListingsPage } from './Pages/MyListingsPage';
 import { NotificationPage } from './Pages/NotificationPage';
 import { MailPage } from './Pages/MailPage';
+import { PaymentPage } from './Pages/PaymentPage';
 function App() {
   const router = createBrowserRouter([
     {path: "/",
@@ -30,7 +31,8 @@ function App() {
         element:<RentPage/>,
       },
       {path:"/notification", element:<NotificationPage/>},
-      {path:"/mail", element: <MailPage/>}
+      {path:"/mail", element: <MailPage/>},
+      {path:"/pay", element: <PaymentPage/>}
     ]}
   ])
 
