@@ -11,8 +11,6 @@ const DriveShareProvider = ({children}) => {
         userData: null
     }
 
-    
-    
 
     const reducer =(state, action)=>{
         switch(action.type){
@@ -43,14 +41,11 @@ const DriveShareProvider = ({children}) => {
 
     const {isLoggedIn, userData} = state;
 
-    useEffect(() => {
-        console.log("Test Current state:", state);
-    }, [state]);
+    
 
     const fetchCars = async() =>{
         try{
             const response = await fetch ('/api');
-            console.log("Testing Backend", response )
             if(!response.ok){
                 throw new Error('Failed to fetch')
             }
@@ -62,7 +57,100 @@ const DriveShareProvider = ({children}) => {
             console.error('Error fetching cars', error)
             
         }
+
     }
+
+    const getSecurityQuestions = async (user_name) => {
+        const response = await fetch('/api/forgotpassword',{
+            method:'PUT',
+            headers:{
+                'Content-Type': 'application/json'
+            },
+            body:JSON.stringify({user_name: user_name})
+        })
+        if(!response.ok){
+            throw new Error('Network response was not ok.');
+        }
+        const data = await response.json()
+        console.log(data)
+        return data
+        
+    }
+
+    const denyRequest = async (requestID) => {
+        try {
+            const response = await fetch('/api/confirm', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestID, action: 'deny' }),
+                credentials: 'include', // For session-based authentication
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log("Deny request response:", data);
+            return data; // Typically contains success message or updated data
+        } catch (error) {
+            console.error("Error denying request:", error);
+            throw error; // Rethrowing for further handling
+        }
+    };
+
+    async function submitPasswordRecovery(username, answers, newPassword) {
+        try {
+            const response = await fetch('/forgotpassword', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_name: username,
+                    answer1: answers.answer1,
+                    answer2: answers.answer2,
+                    answer3: answers.answer3,
+                    password: newPassword,
+                }),
+            });
+    
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+    
+            const data = await response.json(); 
+            console.log(data); return data; 
+        } catch (error) {
+            console.error('There has been a problem with your fetch operation:', error);
+            throw error; 
+        }
+    }
+    
+    
+
+    const approveRequest = async (requestID) => {
+        try {
+            const response = await fetch('/api/confirm', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestID, action: 'approve' }),
+                credentials: 'include', // For session-based authentication
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log("Approve request response:", data);
+            return data; // Typically contains success message or updated data
+        } catch (error) {
+            console.error("Error approving request:", error);
+            throw error; // Rethrowing to handle it further up in the component tree
+        }
+    };
+    
 
     const getCarInfo = async (ID) => {
         try {
@@ -78,6 +166,28 @@ const DriveShareProvider = ({children}) => {
             throw error; 
         }
     };
+
+    const logout = async () => {
+        try {
+            const response = await fetch('/api/logout', { 
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }); 
+            if (response.ok) {
+                const data = await response.json();
+                console.log(data);
+                dispatch({ type: "LOGOUT" });
+                return data;
+            } else {
+                console.error("Logout Error:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Logout Exception:", error);
+        }
+    };
+    
 
     const delistCar = async (carId) => {
         try {
@@ -166,6 +276,43 @@ const DriveShareProvider = ({children}) => {
         }
     }
 
+    const fetchRequestDetails = async () => {
+        try {
+            const response = await fetch('/api/request', {
+                method: 'GET',
+                credentials: 'include', 
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+    
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            return data; 
+        } catch (error) {
+            console.error('Fetching request details failed:', error);
+            return []; 
+        }
+    };
+
+    const registerUser =async  (userData) =>{
+        const response = await fetch ('/api/register', {
+            method: 'POST',
+            headers:{
+                'Content-Type': 'application/json',
+            }, body: JSON.stringify(userData),
+        })
+        if(!response.ok){
+            const errorData= await response.json()
+            throw new Error(errorData.message||"Failed to register")
+        }
+        return response.json()
+    }
+    
+
     const login = async (username, password) => {
         try {
             const response = await fetch('/login', {
@@ -189,15 +336,12 @@ const DriveShareProvider = ({children}) => {
         }
     };
 
-    const logout = (token) => {
-        localStorage.removeItem('userToken')
-        dispatch({type: "LOGOUT", payload: token})
-    }
+    
     
 
     return(
         <DriveShareContext.Provider
-        value={{isLoggedIn, userData, login, getCarListings, logout, fetchCars, hostVehicle, getCarInfo, delistCar, rentCar}}>
+        value={{isLoggedIn, userData, submitPasswordRecovery, getSecurityQuestions, logout, registerUser, login, getCarListings, approveRequest, denyRequest, fetchCars, fetchRequestDetails, hostVehicle, getCarInfo, delistCar, rentCar}}>
             {children}
         </DriveShareContext.Provider>
     )
