@@ -13,6 +13,10 @@ import { MyListingsPage } from './Pages/MyListingsPage';
 import { NotificationPage } from './Pages/NotificationPage';
 import { MailPage } from './Pages/MailPage';
 import { PaymentPage } from './Pages/PaymentPage';
+import { RequestNConfirmPage } from './Pages/RequestNConfirmPage';
+import  {ProtectedRoute}  from './Pages/ProtectedRoute';
+import { ForgotPassword } from './Pages/ForgotPassword';
+
 function App() {
   const router = createBrowserRouter([
     {path: "/",
@@ -21,18 +25,51 @@ function App() {
     children:[
 
       {path: "/", element: <HomePage/>},
-      {path:"/app",  element:<MainAppPage/>},
+      {
+        path:"/app",  
+        element:<ProtectedRoute/>, 
+        children: [
+          {path:"/app",  
+          element:<MainAppPage/>}
+        ] 
+      },
       {path:"/login", element: <LoginPage/>},
       {path:"/signup", element: <SignUpPage/>},
-      {path: "/mycars", element:<MyListingsPage/>},
-      {path:"/host", element:<HostPage/>},
+      {path:"/forgotpassword", element: <ForgotPassword/>},
+
       {
-        path:"/rent/:carID",
-        element:<RentPage/>,
-      },
-      {path:"/notification", element:<NotificationPage/>},
-      {path:"/mail", element: <MailPage/>},
-      {path:"/pay", element: <PaymentPage/>}
+        path: "/mycars", 
+        element: <ProtectedRoute />, 
+        children: [
+          {path: "/mycars", 
+          element: <MyListingsPage/>},
+        ]},
+
+      {
+        path:"/host", 
+        element: <ProtectedRoute />, 
+        children: [
+          {path:"/host", 
+          element: <HostPage/>
+        },
+        ]},
+
+      {
+          path:"/rent/:carID",
+          element: <ProtectedRoute />, children: [
+            {path:"/rent/:carID", element: <RentPage/>},
+          ],
+        },
+        {
+          path:"/reqncon",
+          element: <ProtectedRoute />, children: [
+            {path:"/reqncon", element: <RequestNConfirmPage/>},
+          ],
+        },
+        {path:"/notification", element:<NotificationPage/>},
+        {path:"/mail", element: <MailPage/>},
+        {path:"/pay", element: <PaymentPage/>}
+      
     ]}
   ])
 

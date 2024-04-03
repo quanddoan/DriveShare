@@ -102,7 +102,7 @@ app.get('/api', (req, res) => {
     console.log(req.sessionID);
     try {
         var array: carInfo[] = [];
-        db.all("SELECT * FROM Cars", [], (err, rows: carInfo[]) => {
+        db.all("SELECT * FROM Cars WHERE renter is NULL", [], (err, rows: carInfo[]) => {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error retrieving data from database"
@@ -193,7 +193,7 @@ app.post('/login', (req, res) => {
 })
 
 //Destroy session when user log out
-app.get('/logout', (req, res) => {
+app.get('/api/logout', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         req.session.destroy(() => {
@@ -211,7 +211,7 @@ app.get('/logout', (req, res) => {
 })
 
 //User registration
-app.post('/register', async (req, res) => {
+app.post('/api/register', async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (req.body.user_name == undefined) {
@@ -330,6 +330,7 @@ app.get('/api/cars/:carID', (req: Request, res: Response) => {
         }
     });
 });
+
 //Booking request
 app.put('/api/rent', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -410,7 +411,7 @@ app.put('/api/rent', (req, res) => {
 })
 
 //Approve or deny request
-app.put('/confirm', (req, res) => {
+app.put('/api/confirm', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         //Check if user is logged in
@@ -555,7 +556,7 @@ app.put('/confirm', (req, res) => {
 })
 
 //Retrieve security questions
-app.put('/forgotpassword', (req, res) => {
+app.put('/api/forgotpassword', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         db.get(`SELECT question1, question2, question3 FROM Users WHERE user_name = ?`, [req.body.user_name], function (err, row) {
@@ -578,7 +579,7 @@ app.put('/forgotpassword', (req, res) => {
 })
 
 //Password recovery
-app.post('/forgotpassword', (req, res) => {
+app.post('/api/forgotpassword', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         const userAnswer: recoveryAnswers = {
@@ -879,9 +880,9 @@ app.get('/api/notification', (req, res) => {
         console.log(e);
     }
 })
-
+//----------------request unapproved ------------------------------
 //Get unapproved requests for current user
-app.get('/request', (req, res) => {
+app.get('/api/request', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {

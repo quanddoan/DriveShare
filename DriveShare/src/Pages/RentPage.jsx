@@ -7,6 +7,7 @@ export const RentPage = () => {
     const {carID} = useParams();
     const [carData, setCarData] = useState()
     const {getCarInfo, rentCar} = useDriveShareContext()
+    const [feedbackMessage, setFeedBackMessage] = useState('')
     
 
     useEffect(()=>{
@@ -41,14 +42,18 @@ export const RentPage = () => {
 
     }
 
-    const handleSubmit = (e) =>{
+    const handleSubmit = async (e) =>{
         e.preventDefault()
         const allFieldsFilled = Object.values(rentFormData).every(field=>field!=='')
         if(!allFieldsFilled){
             alert('Please fill all fields')
             return
         }
-        const response = rentCar(rentFormData)
+        const response = await rentCar(rentFormData)
+        setFeedBackMessage(response.message)
+        console.log(response)
+        console.log(response.message)
+        
 
     }
 
@@ -81,6 +86,7 @@ export const RentPage = () => {
 
                     <button className="text-white bg-black border mb-5 border-black m-auto rounded-2xl px-3 py-4 mt-6">Submit request</button>
                 </form>
+                <div className="text-black ">{feedbackMessage}</div>
             </div>
         </div>
     )
