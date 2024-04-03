@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express'
 import session from 'express-session'
 import sqlite3 from 'sqlite3';
+import { v4 as uuid } from 'uuid';
 import { userRecord, userAuthenticator } from './authenticator';
 import { layer1, recoveryAnswers } from "./passwordRecovery";
 import { SQLBuilder } from './carBuilder';
@@ -18,8 +19,11 @@ declare module "express-session" {
 
 app.use(express.json());
 app.use(session({
+    genid: function(req) {
+        return uuid()
+    },
     secret: "keyboard-cat",
-    cookie: {},
+    cookie: {}
 }))
 
 //Structs used to retrieve data from database in specific formats
@@ -95,6 +99,7 @@ db.all(`SELECT userID, carID FROM Requests`, [], function (err, rows : getReques
 //Get all listed cars
 app.get('/api', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
+    console.log(req.sessionID);
     try {
         var array: carInfo[] = [];
         db.all("SELECT * FROM Cars WHERE renter is NULL", [], (err, rows: carInfo[]) => {
@@ -165,6 +170,8 @@ app.post('/login', (req, res) => {
                             "message" : `Welcome ${currentUser.first_name} ${currentUser.last_name}`,
                             "currentUserdata" : currentUser
                         }));
+                        console.log(req.sessionID);
+                        console.log(req.session.user);
                         return;
                     }
                 })
@@ -774,7 +781,7 @@ app.put('/api/delist', (req, res) => {
 })
 
 //Balance payment
-app.put('/payment', (req, res) => {
+app.put('/api/payment', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {
@@ -832,7 +839,8 @@ app.put('/payment', (req, res) => {
                 }
 
                 res.status(200).send(JSON.stringify({
-                    "message": `Payment successful. New balance: ${row.balance}`
+                    "message": 'Payment successful',
+                    "balance" : `${row.balance}`
                 }))
             })
         })
@@ -846,7 +854,7 @@ app.put('/payment', (req, res) => {
 })
 
 //Get notification for current user
-app.get('/notification', (req, res) => {
+app.get('/api/notification', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {
@@ -1048,7 +1056,7 @@ app.get('/history', (req: Request, res: Response) => {
     }
 })
 
-app.post('/mail', (req, res) => {
+app.post('/api/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {
@@ -1100,7 +1108,7 @@ app.post('/mail', (req, res) => {
     }
 })
 //Retrieving mails
-app.get('/mail', (req, res) => {
+app.get('/api/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         if (!req.session.user) {

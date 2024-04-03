@@ -10,9 +10,13 @@ import { MainAppPage } from './Pages/MainAppPage';
 import { DriveShareProvider } from './context/DriveShareProvider';
 import { RentPage } from './Pages/RentPage';
 import { MyListingsPage } from './Pages/MyListingsPage';
+import { NotificationPage } from './Pages/NotificationPage';
+import { MailPage } from './Pages/MailPage';
+import { PaymentPage } from './Pages/PaymentPage';
 import { RequestNConfirmPage } from './Pages/RequestNConfirmPage';
 import  {ProtectedRoute}  from './Pages/ProtectedRoute';
 import { ForgotPassword } from './Pages/ForgotPassword';
+
 function App() {
   const router = createBrowserRouter([
     {path: "/",
@@ -61,7 +65,10 @@ function App() {
           element: <ProtectedRoute />, children: [
             {path:"/reqncon", element: <RequestNConfirmPage/>},
           ],
-        }
+        },
+        {path:"/notification", element:<NotificationPage/>},
+        {path:"/mail", element: <MailPage/>},
+        {path:"/pay", element: <PaymentPage/>}
       
     ]}
   ])

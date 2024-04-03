@@ -11,51 +11,58 @@ const DriveShareProvider = ({children}) => {
         userData: null
     }
 
-
     const reducer =(state, action)=>{
         switch(action.type){
-                       
-            case 'LOGIN': 
+
+            case 'LOGIN':
                 return{
-                    ...state, 
+                    ...state,
                     isLoggedIn: true,
                     userData: action.payload
                 }
 
-            case 'LOGOUT': 
+            case 'LOGOUT':
                 return{
-                    ...state, 
+                    ...state,
                     isLoggedIn: false,
                     userData:  null
                 }
-
+            
+            case 'PAY':
+                return {
+                    ...state,
+                    isLoggedIn: true,
+                    userData: action.payload
+                }
             default:
                 return state;
-                
-            
+
+
 
         }
     }
 
     const [state, dispatch] = useReducer(reducer, initialState);
 
-    const {isLoggedIn, userData} = state;
+    const {isLoggedIn, userData
+    } = state;
 
     
 
     const fetchCars = async() =>{
         try{
             const response = await fetch ('/api');
+          
             if(!response.ok){
                 throw new Error('Failed to fetch')
             }
             const data = await response.json();
             console.log(data)
             return data
-            
-        }catch(error){
+
+        }catch (error) {
             console.error('Error fetching cars', error)
-            
+
         }
 
     }
@@ -163,81 +170,148 @@ const DriveShareProvider = ({children}) => {
             return data;
         } catch (error) {
             console.error("Fetch error:", error);
-            throw error; 
+            throw error;
         }
     };
 
-    const logout = async () => {
+    const getNotification = async () => {
         try {
-            const response = await fetch('/api/logout', { 
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }); 
-            if (response.ok) {
-                const data = await response.json();
-                console.log(data);
-                dispatch({ type: "LOGOUT" });
-                return data;
-            } else {
-                console.error("Logout Error:", response.statusText);
+            const response = await fetch('/api/notification');
+            if (!response.ok){
+                console.error("Error getting notification: ", response);
+                throw new Error(`Failed to fetch notifications: ${response.statusText}`);
             }
-        } catch (error) {
-            console.error("Logout Exception:", error);
+            const data = await response.json();
+            return data;
+        }
+        catch (error) {
+            console.error("Fetch error at notification: ", error);
+            throw error;
         }
     };
-    
+
+    const getMail = async() => {
+        try{
+            const response = await fetch('/api/mail');
+            if (!response.ok){
+                console.error("Error getting mail: ", response);
+                throw new Error(`Failed to fetch mail: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (error) {
+            console.error("Fetch error at get mail: ", error);
+            throw error;
+        }
+    };
+
+    const postMail = async (mailData) => {
+        try {
+            const response = await fetch('/api/mail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(mailData),
+                credentials: 'include'
+            })
+            if (!response.ok) {
+                console.error("Error getting mail: ", response);
+                throw new Error(`Failed to fetch mail: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return data;
+        }
+        catch (error) {
+            console.error("Fetch error at postmail: ", error);
+            throw error;
+        }
+    };
+
+    const payBalance = async (payment) => {
+        try {
+            const response = await fetch('/api/payment', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payment),
+                credentials: 'include'
+            })
+
+            if (!response.ok && response.status != 400) {
+                console.error("Error posting payment: ", response);
+                throw new Error(`Failed to post payment: ${response.statusText}`);
+            }
+            const data = await response.json();
+            if (response.ok){
+                var newBalanceData = userData;
+                newBalanceData.balance = data.balance;
+                dispatch({
+                    type: "PAY",
+                    payload: newBalanceData
+                });
+                console.log("New balance: ", data.balance)
+                console.log("Logged in user data", newBalanceData)
+            }
+            return data;
+        }
+        catch (error) {
+            console.error("Fetch error at payment: ", error);
+            throw error;
+        }
+    }
 
     const delistCar = async (carId) => {
         try {
-          const response = await fetch('/api/delist', {
-            method: 'PUT', 
-            headers: {
-              'Content-Type': 'application/json', 
-            },
-            body: JSON.stringify({ carId }), 
-            credentials: 'include', 
-          });
-      
-          if (!response.ok) {
-            const errorData = await response.json(); 
-            console.error('Delisting failed:', errorData.message);
-            throw new Error(`Failed to delist car: ${errorData.message}`);
-          }
-      
-          const data = await response.json(); 
-          console.log('Delisting successful:', data);
-          return data; 
-        } catch (error) {
-          console.error('Error during delist operation:', error.message);
-          throw error; 
-        }
-      };
-      
+            const response = await fetch('/api/delist', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ carId }),
+                credentials: 'include',
+            });
 
-    const getCarListings = async(userId) =>{
-        try{
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Delisting failed:', errorData.message);
+                throw new Error(`Failed to delist car: ${errorData.message}`);
+            }
+
+            const data = await response.json();
+            console.log('Delisting successful:', data);
+            return data;
+        } catch (error) {
+            console.error('Error during delist operation:', error.message);
+            throw error;
+        }
+    };
+
+
+    const getCarListings = async (userId) => {
+        try {
             const response = await fetch(`/api/user/${userId}/cars`)
-            if(!response.ok){
+            if (!response.ok) {
                 console.error("error response", response)
-                throw new Error (`Failed to fetch: ${response.statusText}`)
+                throw new Error(`Failed to fetch: ${response.statusText}`)
             }
             const data = await response.json()
             return data
-        }catch (error){
+        } catch (error) {
             console.error("Fetch error:", error)
             throw error
         }
-        
-    }
-    
 
-    const hostVehicle = async(formData) =>{
-        try{
+    }
+
+
+    const hostVehicle = async (formData) => {
+        try {
             const response = await fetch('/api/list', {
-                method: 'POST', 
-                headers:{
+                method: 'POST',
+                headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(formData),
@@ -245,24 +319,24 @@ const DriveShareProvider = ({children}) => {
             })
             const data = await response.json()
             return data
-        }catch(error){
+        } catch (error) {
             console.error('Error submitting form:', error);
-            
+
         }
     }
 
-    const rentCar = async(rentData) =>{
-        try{
-            const response = await fetch('/api/rent',{
+    const rentCar = async (rentData) => {
+        try {
+            const response = await fetch('/api/rent', {
                 method: 'PUT',
-                headers: {'Content-type': 'application/json'},
-                body:JSON.stringify({
+                headers: { 'Content-type': 'application/json' },
+                body: JSON.stringify({
                     carId: rentData.carID,
                     start_date: rentData.startDate,
                     end_date: rentData.endDate
                 })
             });
-            if(!response.ok){
+            if (!response.ok) {
                 const errData = await response.json();
                 console.error("Booking failed", errData.message)
                 throw new Error(`Failed to book car: ${response.statusText}`);
@@ -271,7 +345,7 @@ const DriveShareProvider = ({children}) => {
             const data = await response.json();
             console.log('Booking successful:', data);
             return data
-        }catch(error){
+        } catch (error) {
             console.error("Error sending rent request")
         }
     }
@@ -322,8 +396,8 @@ const DriveShareProvider = ({children}) => {
             });
             const data = await response.json();
             if (response.ok) {
-                dispatch({ 
-                    type: "LOGIN", 
+                dispatch({
+                    type: "LOGIN",
                     payload: data.currentUserdata
                 });
                 console.log("Data: ", data)
@@ -335,24 +409,43 @@ const DriveShareProvider = ({children}) => {
             console.error('Login error:', error);
         }
     };
+  
+    const logout = async () => {
+        try {
+            const response = await fetch('/api/logout', { 
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }); 
+            if (response.ok) {
+                const data = await response.json();
+                console.log(data);
+                dispatch({ type: "LOGOUT" });
+                return data;
+            } else {
+                console.error("Logout Error:", response.statusText);
+            }
+        } catch (error) {
+            console.error("Logout Exception:", error);
+        }
+    };
 
-    
-    
 
-    return(
+    return (
         <DriveShareContext.Provider
-        value={{isLoggedIn, userData, submitPasswordRecovery, getSecurityQuestions, logout, registerUser, login, getCarListings, approveRequest, denyRequest, fetchCars, fetchRequestDetails, hostVehicle, getCarInfo, delistCar, rentCar}}>
+        value={{isLoggedIn, userData, submitPasswordRecovery, getSecurityQuestions, logout, registerUser, login, getCarListings, approveRequest, denyRequest, fetchCars, fetchRequestDetails, hostVehicle, getCarInfo, delistCar, rentCar, getNotification, postMail, getMail, payBalance}}>
             {children}
         </DriveShareContext.Provider>
     )
 }
 
-const useDriveShareContext = () =>{
+const useDriveShareContext = () => {
     const context = useContext(DriveShareContext);
-    if (context === undefined ){
+    if (context === undefined) {
         throw new Error("CityContext was used outside of the CityProvider")
-        }
-       
+    }
+
     return context;
 
 
