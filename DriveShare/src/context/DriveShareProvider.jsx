@@ -101,7 +101,7 @@ const DriveShareProvider = ({children}) => {
 
     async function submitPasswordRecovery(username, answers, newPassword) {
         try {
-            const response = await fetch('/forgotpassword', {
+            const response = await fetch('/api/forgotpassword', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

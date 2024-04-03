@@ -572,7 +572,7 @@ app.put('/api/forgotpassword', (req, res) => {
 })
 
 //Password recovery
-app.post('/forgotpassword', (req, res) => {
+app.post('/api/forgotpassword', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
         const userAnswer: recoveryAnswers = {
