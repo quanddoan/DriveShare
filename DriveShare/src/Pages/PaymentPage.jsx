@@ -20,6 +20,9 @@ export const PaymentPage = () => {
             if (response.balance != undefined){
                 setBalance(`New balance: ${response.balance}`);
             }
+            else{
+                setBalance("");
+            }
         }
         catch(e){
             setResult("Something went wrong!");
