@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express'
 import session from 'express-session'
 import sqlite3 from 'sqlite3';
+import { v4 as uuid } from 'uuid';
 import { userRecord, userAuthenticator } from './authenticator';
 import { layer1, recoveryAnswers } from "./passwordRecovery";
 import { SQLBuilder } from './carBuilder';
@@ -18,8 +19,11 @@ declare module "express-session" {
 
 app.use(express.json());
 app.use(session({
+    genid: function(req) {
+        return uuid()
+    },
     secret: "keyboard-cat",
-    cookie: {},
+    cookie: {}
 }))
 
 //Structs used to retrieve data from database in specific formats
@@ -95,6 +99,7 @@ db.all(`SELECT userID, carID FROM Requests`, [], function (err, rows : getReques
 //Get all listed cars
 app.get('/api', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
+    console.log(req.sessionID);
     try {
         var array: carInfo[] = [];
         db.all("SELECT * FROM Cars", [], (err, rows: carInfo[]) => {
@@ -165,6 +170,8 @@ app.post('/login', (req, res) => {
                             "message" : `Welcome ${currentUser.first_name} ${currentUser.last_name}`,
                             "currentUserdata" : currentUser
                         }));
+                        console.log(req.sessionID);
+                        console.log(req.session.user);
                         return;
                     }
                 })

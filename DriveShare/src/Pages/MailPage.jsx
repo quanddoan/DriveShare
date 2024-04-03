@@ -89,13 +89,13 @@ export const MailPage = () => {
                 </div>
                 <div className={displayCompose}>
                     <form onSubmit={handleSubmit} className="flex flex-col items-center w-full gap-5">
-                        <label className="mr-3">To:</label>
+                    <label className="text-xl font-bold">To:</label>
                         <input name="to" onChange={handleChange} className="border border-black" type="text"></input>
 
-                        <label className="mr-3">Message:</label>
+                        <label className="text-xl font-bold">Message:</label>
                         <textarea name="message" onChange={handleChange} className="flex flex-col border border-black" style={{ height:'10em', width: '70%'}} type="text"></textarea>
                         
-                        <button className="text-white bg-black border mb-5 border-black m-auto rounded-2xl px-3 py-4 mt-6" type="submit">Send</button>
+                        <button className="text-white bg-black border mb-5 border-black m-auto rounded-2xl px-3 py-4 mt-6 font-bold" type="submit">Send</button>
                     </form>
                     <div className="flex flex-row justify-center text-center items- center text-black font-bold">{mailSent}</div>
                 </div>
@@ -118,26 +118,26 @@ export const MailPage = () => {
                     </button>
                 </div>
                 <div className={displayCompose}>
-                    <form onSubmit={handleSubmit} className="flex flex-col items-center w-full gap-5">
-                        <label className="mr-3">To:</label>
+                    <form onSubmit={handleSubmit} className="flex flex-col items-center gap-5">
+                        <label className="text-xl font-bold">To:</label>
                         <input name="to" onChange={handleChange} className="border border-black" type="text"></input>
 
-                        <label className="mr-3">Message:</label>
+                        <label className="text-xl font-bold">Message:</label>
                         <textarea name="message" onChange={handleChange} className="flex flex-col border border-black" style={{ height:'10em', width: '70%'}} type="text"></textarea>
                         
-                        <button className="text-white bg-black border mb-5 border-black m-auto rounded-2xl px-3 py-4 mt-6" type="submit">Send</button>
+                        <button className="text-white bg-black border mb-5 border-black m-auto rounded-2xl px-3 py-4 mt-6 font-bold" type="submit">Send</button>
                     </form>
                     <div className="flex flex-row justify-center text-center items- center text-black font-bold">{mailSent}</div>
                 </div>
                 <div className="flex flex-row justify-start text-left items-start">
                     <div className="flex flex-col justify-center text-center items-center" style={{width:'50%'}}>
                         {mailList.map((mail) => (
-                            <button className="flex flex-row justify-center text-center items-center border border-black rounded-xl m-2 p-2 w-full" onClick={() => handleClickOnMail(mail.user_name, mail.message)}>
+                            <button className="flex flex-row justify-center text-center items-center border border-black rounded-3xl m-2 p-2 min-w-96 font-bold" onClick={() => handleClickOnMail(mail.user_name, mail.message)}>
                                 From: {mail.user_name}
                             </button>
                         ))}
                     </div>
-                    <div className="flex flex-col m-2 p-2 border border-black min-h-screen" style={{width:'40%'}}>
+                    <div className="flex flex-col m-2 p-5 shadow-2xl min-h-screen" style={{width:'40%'}}>
                         <div className="font-bold">From:</div>
                         {mailSender}
                         <div className="font-bold">Message:</div>
