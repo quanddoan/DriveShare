@@ -10,6 +10,9 @@ import { MainAppPage } from './Pages/MainAppPage';
 import { DriveShareProvider } from './context/DriveShareProvider';
 import { RentPage } from './Pages/RentPage';
 import { MyListingsPage } from './Pages/MyListingsPage';
+import { RequestNConfirmPage } from './Pages/RequestNConfirmPage';
+import  {ProtectedRoute}  from './Pages/ProtectedRoute';
+import { ForgotPassword } from './Pages/ForgotPassword';
 function App() {
   const router = createBrowserRouter([
     {path: "/",
@@ -18,15 +21,47 @@ function App() {
     children:[
 
       {path: "/", element: <HomePage/>},
-      {path:"/app",  element:<MainAppPage/>},
+      {
+        path:"/app",  
+        element:<ProtectedRoute/>, 
+        children: [
+          {path:"/app",  
+          element:<MainAppPage/>}
+        ] 
+      },
       {path:"/login", element: <LoginPage/>},
       {path:"/signup", element: <SignUpPage/>},
-      {path: "/mycars", element:<MyListingsPage/>},
-      {path:"/host", element:<HostPage/>},
+      {path:"/forgotpassword", element: <ForgotPassword/>},
+
       {
-        path:"/rent/:carID",
-        element:<RentPage/>,
-      }
+        path: "/mycars", 
+        element: <ProtectedRoute />, 
+        children: [
+          {path: "/mycars", 
+          element: <MyListingsPage/>},
+        ]},
+
+      {
+        path:"/host", 
+        element: <ProtectedRoute />, 
+        children: [
+          {path:"/host", 
+          element: <HostPage/>
+        },
+        ]},
+
+      {
+          path:"/rent/:carID",
+          element: <ProtectedRoute />, children: [
+            {path:"/rent/:carID", element: <RentPage/>},
+          ],
+        },
+        {
+          path:"/reqncon",
+          element: <ProtectedRoute />, children: [
+            {path:"/reqncon", element: <RequestNConfirmPage/>},
+          ],
+        }
       
     ]}
   ])
