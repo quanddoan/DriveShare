@@ -20,11 +20,19 @@ export const Footer = () => {
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
                     My Listings
                 </button>
+                <button onClick={() => navigate('/rent-history')} 
+                        className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
+                    History
+                </button>
+                <button onClick={() => navigate('/reviews')} 
+                        className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
+                    Reviews
+                </button>
                 <button onClick={() => navigate('/reqncon')} 
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
                     Requests
                 </button>
-                <button onClick={() => navigate('/notification)} 
+                <button onClick={() => navigate('/notification')} 
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
                     Notifications
                 </button>
