@@ -16,6 +16,9 @@ import { PaymentPage } from './Pages/PaymentPage';
 import { RequestNConfirmPage } from './Pages/RequestNConfirmPage';
 import  {ProtectedRoute}  from './Pages/ProtectedRoute';
 import { ForgotPassword } from './Pages/ForgotPassword';
+import { RentHistoryPage } from './Pages/RentHistoryPage';
+import { ReviewPage } from './Pages/ReviewPage';
+import { CarReviewsPage } from './Pages/CarReviewsPage';
 
 function App() {
   const router = createBrowserRouter([
@@ -64,6 +67,27 @@ function App() {
           path:"/reqncon",
           element: <ProtectedRoute />, children: [
             {path:"/reqncon", element: <RequestNConfirmPage/>},
+          ],
+        },
+        {
+          path: "/rent-history",
+          element: <ProtectedRoute />, children: [
+            {path: "/rent-history", element: <RentHistoryPage/>},
+          ],
+        },
+        {
+          path: "/reviews",
+          element: <ProtectedRoute />, children: [
+            {path: "",
+              element: <ReviewPage />,
+            },
+          ]
+        },
+        {
+          path: "/cars/:carID/reviews",
+          element: <ProtectedRoute />,
+          children: [
+            { path: "", element: <CarReviewsPage /> },
           ],
         },
         {path:"/notification", element:<NotificationPage/>},
