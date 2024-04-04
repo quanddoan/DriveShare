@@ -371,6 +371,57 @@ const DriveShareProvider = ({children}) => {
             return []; 
         }
     };
+    const getRentHistory = async () => {
+        try {
+            const response = await fetch('/api/history', {
+                method: 'GET',
+                credentials: 'include', 
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data; 
+        } catch (error) {
+            console.error("Error fetching rent history:", error);
+            throw error; 
+        }
+    };
+      // Handler function to get reviews for a specific car
+    const getReviewsForCar = async (carID) => {
+        try {
+            const response = await fetch(`/api/reviews/${carID}`);
+            if (!response.ok) throw new Error('Failed to fetch reviews.');
+            const reviews = await response.json();
+            return reviews;
+        } catch (error) {
+            console.error('Fetch error:', error);
+            throw error;
+        }
+    };
+
+  // Handler function to post a new review for a car
+    const postReview = async ({ CarID, Rating, Review }) => {
+        try {
+            const response = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ CarID, Rating, Review }),
+            });
+            if (!response.ok) throw new Error('Failed to submit review.');
+            return await response.json(); 
+        } catch (error) {
+            console.error('Post error:', error);
+            throw error;
+        }
+    };
+  
+    
 
     const registerUser =async  (userData) =>{
         const response = await fetch ('/api/register', {
@@ -434,7 +485,7 @@ const DriveShareProvider = ({children}) => {
 
     return (
         <DriveShareContext.Provider
-        value={{isLoggedIn, userData, submitPasswordRecovery, getSecurityQuestions, logout, registerUser, login, getCarListings, approveRequest, denyRequest, fetchCars, fetchRequestDetails, hostVehicle, getCarInfo, delistCar, rentCar, getNotification, postMail, getMail, payBalance}}>
+        value={{isLoggedIn, userData, submitPasswordRecovery, getSecurityQuestions, logout, registerUser, login, getCarListings, approveRequest, denyRequest, fetchCars, fetchRequestDetails, getRentHistory, getReviewsForCar, postReview, hostVehicle, getCarInfo, delistCar, rentCar, getNotification, postMail, getMail, payBalance}}>
             {children}
         </DriveShareContext.Provider>
     )
