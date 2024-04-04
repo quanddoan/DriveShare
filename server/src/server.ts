@@ -941,7 +941,6 @@ app.post('/api/reviews', (req: Request, res: Response) => {
             const eventSubscribe = new eventListener();
             eventSubscribe.markHappened(req.session.user.ID, CarID, 'review posted');
 
-            // Send back a success message
             res.json({ "message": "Review posted successfully" });
         }
     );
