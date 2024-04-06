@@ -124,24 +124,6 @@ app.get('/api', (req, res) => {
     }
 });
 
-app.get('/api/user/:userId/cars', (req, res) => {
-    const userId = req.params.userId; 
-    const sqlQuery = "SELECT * FROM Cars WHERE lister = ?";
-
-    db.all(sqlQuery, [userId], (err, rows) => {
-        if (err) {
-            console.error("Error fetching cars listed by user:", err.message);
-            res.status(500).send(JSON.stringify({ message: "Internal server error" }));
-            return;
-        }
-
-        if (rows.length === 0) {
-            res.status(404).send(JSON.stringify({ message: "No cars found for this user" }));
-        } else {
-            res.status(200).json(rows);
-        }
-    });
-});
 
 //User login
 app.post('/login', (req, res) => {
@@ -769,6 +751,11 @@ app.put('/api/delist', (req, res) => {
                 res.status(200).send(JSON.stringify({
                     "message": "Delist successfully"
                 }))
+
+                var eventUnsubscribe = new eventListener();
+                //Unsubscribe lister from events related to the vehicle
+                eventUnsubscribe.unsubscribe(carId, userID, "book");
+                eventUnsubscribe.unsubscribe(carId, userID, "review");
             })
         })
     }

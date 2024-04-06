@@ -24,7 +24,7 @@ export const Footer = () => {
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
                     Requests
                 </button>
-                <button onClick={() => navigate('/notification)} 
+                <button onClick={() => navigate('/notification')} 
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
                     Notifications
                 </button>
