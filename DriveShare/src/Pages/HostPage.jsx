@@ -1,15 +1,18 @@
 /* eslint-disable no-unused-vars */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDriveShareContext } from "../context/DriveShareProvider";
 import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom"
 
 export const HostPage = () => {
-    const { hostVehicle, isLoggedIn } = useDriveShareContext();
+    const { hostVehicle, getCarInfo } = useDriveShareContext();
     const [message, setMessage] = useState('');
+    const [VIN, setVIN] = useState('');
     const navigate = useNavigate();
+    const { carID } = useParams();
 
     const [formData, setFormData] = useState({
-        carId: -1,
+        carId: (carID != 0) ? carID : -1,
         vehicleBrand: '',
         vehicleType: '',
         vehicleYear: '',
@@ -38,12 +41,29 @@ export const HostPage = () => {
         setMessage(response.message);
     };
 
+    useEffect(() => {
+        const fetchVIN = async () => {
+            if (carID != 0) {
+                const response = await getCarInfo(carID);
+                setVIN(response.VIN);
+            }
+        };
+        fetchVIN();
+    }, []);
+
+    useEffect(() => {
+        setFormData(prevState => ({
+            ...prevState,
+            vehicleVIN : VIN,
+        }));
+    }, [VIN])
+
     return (
         <div className="flex flex-col justify-center items-center min-h-screen">
             <form onSubmit={handleFormSubmission} className="w-full max-w-lg p-8 bg-white rounded-lg shadow-md">
                 <h1 className="font-bold text-2xl mb-6 text-center">Become a Host</h1>
                 <div className="space-y-4">
-                    {["vehicleBrand", "vehicleType", "vehicleYear", "vehiclePrice", "vehicleMileage", "vehicleVIN"].map((field, index) => (
+                    {["vehicleBrand", "vehicleType", "vehicleYear", "vehiclePrice", "vehicleMileage"].map((field, index) => (
                         <div key={index}>
                             <label htmlFor={field} className="block text-lg font-medium text-gray-700 capitalize">{`Enter ${field.replace("vehicle", "")}:`}</label>
                             <input
@@ -55,12 +75,27 @@ export const HostPage = () => {
                             />
                         </div>
                     ))}
+                    {carID == 0 &&
+                        (<div key={5}>
+                            <label htmlFor="vehicleVIN" className="block text-lg font-medium text-gray-700 capitalize">{`Enter VIN:`}</label>
+                            <input
+                                id="vehicleVIN"
+                                name="vehicleVIN"
+                                type="text"
+                                onChange={handleChange}
+                                className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>)}
+                    {carID != 0 &&
+                        (<div key={5}>
+                            <label htmlFor="vehicleVIN" className="block text-lg font-medium text-gray-700 capitalize">Car VIN: {VIN}</label>
+                        </div>)}
                     <button className="w-full py-3 px-4 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out mt-6">
                         Host Vehicle
                     </button>
                 </div>
 
-                {message && 
+                {message &&
                     <div className="text-center text-xl font-bold mt-6 p-4 bg-gray-100 rounded-md">
                         {message}
                     </div>}

@@ -8,7 +8,7 @@ export const Footer = () => {
         <footer className="mt-7 bg-black text-white pt-5 pb-8 px-4">
             <h2 className="text-2xl pb-4 block font-semibold border-b border-gray-700">Other Actions</h2>
             <div className="flex flex-wrap justify-center gap-4 pt-6">
-                <button onClick={() => navigate('/host')} 
+                <button onClick={() => navigate(`/host/${0}`)} 
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
                     Host a car
                 </button>
@@ -19,6 +19,14 @@ export const Footer = () => {
                 <button onClick={() => navigate('/mycars')} 
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
                     My Listings
+                </button>
+                <button onClick={() => navigate('/rent-history')} 
+                        className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
+                    History
+                </button>
+                <button onClick={() => navigate('/reviews')} 
+                        className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">
+                    Reviews
                 </button>
                 <button onClick={() => navigate('/reqncon')} 
                         className="rounded-lg bg-white bg-opacity-20 hover:bg-opacity-40 text-white font-medium py-3 px-6 transition-all ease-in-out duration-300">

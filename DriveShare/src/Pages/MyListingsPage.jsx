@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDriveShareContext } from "../context/DriveShareProvider";
+import { useNavigate } from "react-router-dom"
 
 export const MyListingsPage = () => {
     const { getCarListings, userData, delistCar } = useDriveShareContext();
     const [myCarListings, setMyCarListings] = useState([]);
+    const navigate = useNavigate()
 
     const fetchData = useCallback(async () => {
         if (userData.ID) {
@@ -20,6 +22,10 @@ export const MyListingsPage = () => {
         delistCar(ID);
         fetchData(); // Consider awaiting this or handling the promise to ensure state is updated after deletion
     };
+
+    const handleUpdateCar = (ID) => {
+        navigate(`/host/${ID}`);
+    }
     
     return (
         <div className="flex flex-col mx-7 text-start min-h-screen w-full">
@@ -40,6 +46,7 @@ export const MyListingsPage = () => {
                                         DELETE
                                     </button>
                                     <button 
+                                        onClick={() => handleUpdateCar(car.ID)}
                                         className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-150 ease-in-out">
                                         UPDATE
                                     </button>

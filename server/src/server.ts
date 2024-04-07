@@ -99,7 +99,6 @@ db.all(`SELECT userID, carID FROM Requests`, [], function (err, rows : getReques
 //Get all listed cars
 app.get('/api', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    console.log(req.sessionID);
     try {
         var array: carInfo[] = [];
         db.all("SELECT * FROM Cars WHERE renter is NULL", [], (err, rows: carInfo[]) => {
@@ -124,6 +123,31 @@ app.get('/api', (req, res) => {
     }
 });
 
+app.get('/api/all', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    try {
+        var array: carInfo[] = [];
+        db.all("SELECT * FROM Cars", [], (err, rows: carInfo[]) => {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error retrieving data from database"
+                }))
+                return;
+            }
+
+            rows.forEach((row) => {
+                array.push(row)
+            })
+            res.status(200).send(JSON.stringify(array))
+        });
+    }
+    catch (e) {
+        res.status(500).send(JSON.stringify({
+            "message": "Server error"
+        }))
+        console.log(e);
+    }
+})
 
 //User login
 app.post('/login', (req, res) => {
@@ -152,8 +176,6 @@ app.post('/login', (req, res) => {
                             "message" : `Welcome ${currentUser.first_name} ${currentUser.last_name}`,
                             "currentUserdata" : currentUser
                         }));
-                        console.log(req.sessionID);
-                        console.log(req.session.user);
                         return;
                     }
                 })
@@ -477,7 +499,7 @@ app.put('/api/confirm', (req, res) => {
                                     return;
                                 }
                                 //Remove approved request from database
-                                db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
+                                db.run(`UPDATE Requests SET status = 1 WHERE requestID = ?`, [requestID], function (err) {
                                     if (err) {
                                         res.status(500).send(JSON.stringify({
                                             "message": "Error retrieving data from database"
@@ -508,7 +530,7 @@ app.put('/api/confirm', (req, res) => {
                             return;
                         }
 
-                        db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
+                        db.run(`UPDATE Requests SET status = -1 WHERE requestID = ?`, [requestID], function (err) {
                             if (err) {
                                 res.status(500).send(JSON.stringify({
                                     "message": "Error retrieving data from database"
@@ -645,7 +667,6 @@ app.post('/api/list', async (req, res) => {
                 console.log(err.message);
                 return;
             }
-
             if (row && req.body.carId == -1) {
                 res.status(400).send(JSON.stringify({
                     "message": "Car is already listed"
@@ -881,7 +902,7 @@ app.get('/api/request', (req, res) => {
 
         var currentUserID = req.session.user.ID;
         //Find requests
-        db.all(`SELECT requestID, carID, start_date, end_date, first_name, last_name, user_name FROM (Requests, Users) WHERE Users.ID = userID AND carID IN (SELECT ID FROM Cars WHERE lister = ?);`, [currentUserID], function (err, rows) {
+        db.all(`SELECT requestID, carID, start_date, end_date, first_name, last_name, user_name FROM (Requests, Users) WHERE Requests.status = 0 AND Users.ID = userID AND carID IN (SELECT ID FROM Cars WHERE lister = ?);`, [currentUserID], function (err, rows) {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error retrieving data from database"
@@ -906,142 +927,96 @@ app.get('/api/request', (req, res) => {
 })
 
 //Post review for a vehicle
-app.post('/review', (req: Request, res: Response) => {
-    res.setHeader('Content-Type', 'application/json');
-    try {
-        if (!req.session.user) {
-            res.status(401).send(JSON.stringify({
-                "message": "Unauthorized access"
-            }));
-            return;
-        }
-
-        const { Rating, Review, CarID } = req.body;
-        const ActorID = req.session.user.ID;
-
-        //Create new review record
-        db.run(
-            "INSERT INTO Reviews (ActorID, Rating, Reviews, CarID) VALUES (?, ?, ?, ?);",
-            [ActorID, Rating, Review, CarID],
-            function (err: Error | null) {
-                if (err) {
-                    res.status(500).send(JSON.stringify({
-                        "message": "Error adding review to database",
-                    }));
-                    console.log(err.message);
-                } else {
-                    //Notify observer that event happened
-                    db.get(`SELECT renter, lister FROM Cars WHERE ID = ?`, [CarID], function (err, row: carActor) {
-                        if (err) {
-                            res.status(500).send(JSON.stringify({
-                                "message": "Error retrieving data from database",
-                            }));
-                            console.log(err.message);
-                            return;
-                        }
-
-                        var eventSubscribe = new eventListener();
-                        eventSubscribe.markHappened(row.lister, CarID, "review");
-                        eventSubscribe.markHappened(row.renter, CarID, "review");
-                        //Create new log entry
-                        db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('Review posted', ?, ?)`, [ActorID, CarID], function (err) {
-                            if (err) {
-                                res.status(500).send(JSON.stringify({
-                                    "message": "Error adding review to database",
-                                }));
-                                console.log(err.message);
-                                return;
-                            }
-
-                            res.status(200).send(JSON.stringify({
-                                "message": "Review posted"
-                            }))
-                        })
-                    })
-                }
-            }
-        );
-    }
-    catch (e) {
-        res.status(500).send(JSON.stringify({
-            "message": "Server error"
-        }))
-        console.log(e);
-    }
-})
-
-//Get reviews
-app.put('/review', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
+app.post('/api/reviews', (req: Request, res: Response) => {
     if (!req.session.user) {
-        res.status(401).send(JSON.stringify({
+        return res.status(401).json({
             "message": "Unauthorized access"
-        }));
-        return;
+        });
     }
-    try {
-        var vechileID = req.body.carID;
 
-        if (vechileID == undefined) {
-            res.status(400).send(JSON.stringify({
-                "message": "Bad request"
-            }))
-            return;
-        }
-        //Retrieve reviews
-        db.all(`SELECT Reviews.ID, CarID, first_name, last_name, Rating, Reviews FROM (Reviews, Users) WHERE CarID = ? AND ActorID = Users.ID`, [vechileID], function (err, rows: Array<any>) {
+    const { Rating, Reviews, CarID } = req.body;
+    const ActorID = req.session.user.ID;
+
+    // Create a new review record
+    db.run(
+        "INSERT INTO Reviews (ActorID, Rating, Reviews, CarID) VALUES (?, ?, ?, ?)",
+        [ActorID, Rating, Reviews, CarID],
+        (err) => {
             if (err) {
-                res.status(500).send(JSON.stringify({
-                    "message": "Error retrieving data from database"
-                }))
                 console.log(err.message);
-                return;
+                return res.status(500).json({ "message": "Error adding review to database" });
             }
-            res.status(200).send(JSON.stringify(rows));
-        })
-    }
-    catch (e) {
-        res.status(500).send(JSON.stringify({
-            "message": "Server error"
-        }))
-        console.log(e);
-    }
-})
+            
+            db.get(`SELECT renter, lister FROM Cars WHERE ID = ?`, [CarID], function (err, row: carActor){
+                if (err){
+                    console.log(err.message);
+                return res.status(500).json({ "message": "Error retrieving from database" });
+                }
 
+                var eventSubscribe = new eventListener();
+                eventSubscribe.markHappened(row.lister, CarID, "review");
+                eventSubscribe.markHappened(row.renter, CarID, "review");
+
+                db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('Review posted', ?, ?)`, [ActorID, CarID], function (err){
+                    if (err){
+                        console.log(err.message);
+                    return res.status(500).json({ "message": "Error adding Log entry to database" });
+                    }
+                    res.status(200).send(JSON.stringify({
+                        "message": "Review posted"
+                    }))
+                })
+            })
+        }
+    );
+});
+app.get('/api/reviews/:CarID', (req: Request, res: Response) => {
+    const CarID = req.params.CarID;
+
+    db.all(
+        "SELECT Reviews.ID, CarID, ActorID, Rating, Reviews, Users.first_name, Users.last_name FROM Reviews JOIN Users ON Reviews.ActorID = Users.ID WHERE CarID = ?",
+        [CarID],
+        (err, rows) => {
+            if (err) {
+                console.log(err.message);
+                return res.status(500).json({ "message": "Error retrieving data from database" });
+            }
+
+            res.json(rows);
+        }
+    );
+});
 //Get all log entries
-app.get('/history', (req: Request, res: Response) => {
-    res.setHeader('Content-Type', 'application/json');
+app.get('/api/history', (req: Request, res: Response) => {
     if (!req.session.user) {
-        res.status(401).send(JSON.stringify({
-            "message": "Unauthorized access"
-        }));
+        res.status(401).send({ "message": "Unauthorized access" });
         return;
     }
     try {
         const ActorID = req.session.user.ID;
-        //Retrieve log entries
-        db.all(
-            "SELECT * FROM Log WHERE Actor = ?;",
-            [ActorID],
-            (err: Error | null, rows: Array<any>) => {
-                if (err) {
-                    res.status(500).send(JSON.stringify({
-                        "message": "Error retrieving history from database",
-                    }));
-                    console.log(err.message);
-                } else {
-                    res.status(200).send(JSON.stringify(rows));
-                }
+        // Join Log and Cars table 
+        const logWithCarInfoQuery = `
+        SELECT DISTINCT 
+            Logs.Activity, Logs.Actor, Logs.carID, Cars.brand, Cars.type, Requests.start_date, Requests.end_date 
+        FROM Log as Logs
+        LEFT JOIN Cars ON Logs.carID = Cars.ID 
+        LEFT JOIN Requests ON Logs.carID = Requests.carID AND 
+            ((Logs.Activity = 'approve request' AND Requests.status = 1)OR 
+            (Logs.Activity = 'deny request' AND Requests.status = -1) OR Logs.Actor = Requests.userID)
+        WHERE Logs.Actor = ?;`;
+        db.all(logWithCarInfoQuery, [ActorID], (err, rows) => {
+            if (err) {
+                res.status(500).send({"message": "Error retrieving history from database"});
+                console.error(err.message);
+            } else {
+                res.status(200).send(rows);
             }
-        );
+        });
+    } catch (e) {
+        res.status(500).send({"message": "Server error"});
+        console.error(e);
     }
-    catch (e) {
-        res.status(500).send(JSON.stringify({
-            "message": "Server error"
-        }))
-        console.log(e)
-    }
-})
+});
 
 app.post('/api/mail', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
