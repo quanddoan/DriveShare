@@ -99,7 +99,6 @@ db.all(`SELECT userID, carID FROM Requests`, [], function (err, rows : getReques
 //Get all listed cars
 app.get('/api', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    console.log(req.sessionID);
     try {
         var array: carInfo[] = [];
         db.all("SELECT * FROM Cars WHERE renter is NULL", [], (err, rows: carInfo[]) => {
@@ -123,6 +122,32 @@ app.get('/api', (req, res) => {
         console.log(e);
     }
 });
+
+app.get('/api/all', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    try {
+        var array: carInfo[] = [];
+        db.all("SELECT * FROM Cars", [], (err, rows: carInfo[]) => {
+            if (err) {
+                res.status(500).send(JSON.stringify({
+                    "message": "Error retrieving data from database"
+                }))
+                return;
+            }
+
+            rows.forEach((row) => {
+                array.push(row)
+            })
+            res.status(200).send(JSON.stringify(array))
+        });
+    }
+    catch (e) {
+        res.status(500).send(JSON.stringify({
+            "message": "Server error"
+        }))
+        console.log(e);
+    }
+})
 
 app.get('/api/user/:userId/cars', (req, res) => {
     const userId = req.params.userId; 
@@ -170,8 +195,6 @@ app.post('/login', (req, res) => {
                             "message" : `Welcome ${currentUser.first_name} ${currentUser.last_name}`,
                             "currentUserdata" : currentUser
                         }));
-                        console.log(req.sessionID);
-                        console.log(req.session.user);
                         return;
                     }
                 })
@@ -495,7 +518,7 @@ app.put('/api/confirm', (req, res) => {
                                     return;
                                 }
                                 //Remove approved request from database
-                                db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
+                                db.run(`UPDATE Requests SET status = 1 WHERE requestID = ?`, [requestID], function (err) {
                                     if (err) {
                                         res.status(500).send(JSON.stringify({
                                             "message": "Error retrieving data from database"
@@ -526,7 +549,7 @@ app.put('/api/confirm', (req, res) => {
                             return;
                         }
 
-                        db.run(`DELETE FROM Requests WHERE requestID = ?`, [requestID], function (err) {
+                        db.run(`UPDATE Requests SET status = -1 WHERE requestID = ?`, [requestID], function (err) {
                             if (err) {
                                 res.status(500).send(JSON.stringify({
                                     "message": "Error retrieving data from database"
@@ -663,7 +686,6 @@ app.post('/api/list', async (req, res) => {
                 console.log(err.message);
                 return;
             }
-
             if (row && req.body.carId == -1) {
                 res.status(400).send(JSON.stringify({
                     "message": "Car is already listed"
@@ -894,7 +916,7 @@ app.get('/api/request', (req, res) => {
 
         var currentUserID = req.session.user.ID;
         //Find requests
-        db.all(`SELECT requestID, carID, start_date, end_date, first_name, last_name, user_name FROM (Requests, Users) WHERE Users.ID = userID AND carID IN (SELECT ID FROM Cars WHERE lister = ?);`, [currentUserID], function (err, rows) {
+        db.all(`SELECT requestID, carID, start_date, end_date, first_name, last_name, user_name FROM (Requests, Users) WHERE Requests.status = 0 AND Users.ID = userID AND carID IN (SELECT ID FROM Cars WHERE lister = ?);`, [currentUserID], function (err, rows) {
             if (err) {
                 res.status(500).send(JSON.stringify({
                     "message": "Error retrieving data from database"
@@ -926,22 +948,39 @@ app.post('/api/reviews', (req: Request, res: Response) => {
         });
     }
 
-    const { Rating, Review, CarID } = req.body;
+    const { Rating, Reviews, CarID } = req.body;
     const ActorID = req.session.user.ID;
 
     // Create a new review record
     db.run(
         "INSERT INTO Reviews (ActorID, Rating, Reviews, CarID) VALUES (?, ?, ?, ?)",
-        [ActorID, Rating, Review, CarID],
+        [ActorID, Rating, Reviews, CarID],
         (err) => {
             if (err) {
                 console.log(err.message);
                 return res.status(500).json({ "message": "Error adding review to database" });
             }
-            const eventSubscribe = new eventListener();
-            eventSubscribe.markHappened(req.session.user.ID, CarID, 'review posted');
+            
+            db.get(`SELECT renter, lister FROM Cars WHERE ID = ?`, [CarID], function (err, row: carActor){
+                if (err){
+                    console.log(err.message);
+                return res.status(500).json({ "message": "Error retrieving from database" });
+                }
 
-            res.json({ "message": "Review posted successfully" });
+                var eventSubscribe = new eventListener();
+                eventSubscribe.markHappened(row.lister, CarID, "review");
+                eventSubscribe.markHappened(row.renter, CarID, "review");
+
+                db.run(`INSERT INTO Log (Activity, Actor, carID) VALUES ('Review posted', ?, ?)`, [ActorID, CarID], function (err){
+                    if (err){
+                        console.log(err.message);
+                    return res.status(500).json({ "message": "Error adding Log entry to database" });
+                    }
+                    res.status(200).send(JSON.stringify({
+                        "message": "Review posted"
+                    }))
+                })
+            })
         }
     );
 });
@@ -971,12 +1010,14 @@ app.get('/api/history', (req: Request, res: Response) => {
         const ActorID = req.session.user.ID;
         // Join Log and Cars table 
         const logWithCarInfoQuery = `
-            SELECT Logs.LogID, Logs.Activity, Logs.Actor, Logs.carID, 
-                   Cars.brand, Cars.type, Requests.start_date, Requests.end_date 
-            FROM Log as Logs
-            LEFT JOIN Cars ON Logs.carID = Cars.ID 
-            LEFT JOIN Requests ON Logs.carID = Requests.carID
-            WHERE Logs.Actor = ?;`;
+        SELECT DISTINCT 
+            Logs.Activity, Logs.Actor, Logs.carID, Cars.brand, Cars.type, Requests.start_date, Requests.end_date 
+        FROM Log as Logs
+        LEFT JOIN Cars ON Logs.carID = Cars.ID 
+        LEFT JOIN Requests ON Logs.carID = Requests.carID AND 
+            ((Logs.Activity = 'approve request' AND Requests.status = 1)OR 
+            (Logs.Activity = 'deny request' AND Requests.status = -1) OR Logs.Actor = Requests.userID)
+        WHERE Logs.Actor = ?;`;
         db.all(logWithCarInfoQuery, [ActorID], (err, rows) => {
             if (err) {
                 res.status(500).send({"message": "Error retrieving history from database"});

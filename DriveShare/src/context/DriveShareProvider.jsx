@@ -67,6 +67,23 @@ const DriveShareProvider = ({children}) => {
 
     }
 
+    const fetchAllCars = async() => {
+        try{
+            const response = await fetch ('/api/all');
+          
+            if(!response.ok){
+                throw new Error('Failed to fetch')
+            }
+            const data = await response.json();
+            console.log(data)
+            return data
+
+        }catch (error) {
+            console.error('Error fetching cars', error)
+
+        }
+    }
+
     const getSecurityQuestions = async (user_name) => {
         const response = await fetch('/api/forgotpassword',{
             method:'PUT',
@@ -406,12 +423,12 @@ const DriveShareProvider = ({children}) => {
     };
 
   // Handler function to post a new review for a car
-    const postReview = async ({ CarID, Rating, Review }) => {
+    const postReview = async ({ CarID, Rating, Reviews }) => {
         try {
             const response = await fetch('/api/reviews', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ CarID, Rating, Review }),
+                body: JSON.stringify({ CarID, Rating, Reviews }),
             });
             if (!response.ok) throw new Error('Failed to submit review.');
             return await response.json(); 
@@ -485,7 +502,7 @@ const DriveShareProvider = ({children}) => {
 
     return (
         <DriveShareContext.Provider
-        value={{isLoggedIn, userData, submitPasswordRecovery, getSecurityQuestions, logout, registerUser, login, getCarListings, approveRequest, denyRequest, fetchCars, fetchRequestDetails, getRentHistory, getReviewsForCar, postReview, hostVehicle, getCarInfo, delistCar, rentCar, getNotification, postMail, getMail, payBalance}}>
+        value={{isLoggedIn, userData, submitPasswordRecovery, getSecurityQuestions, logout, registerUser, login, getCarListings, approveRequest, denyRequest, fetchCars, fetchRequestDetails, getRentHistory, getReviewsForCar, postReview, hostVehicle, getCarInfo, delistCar, rentCar, getNotification, postMail, getMail, payBalance, fetchAllCars}}>
             {children}
         </DriveShareContext.Provider>
     )

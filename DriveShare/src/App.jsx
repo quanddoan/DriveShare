@@ -49,10 +49,10 @@ function App() {
         ]},
 
       {
-        path:"/host", 
+        path:"/host/:carID", 
         element: <ProtectedRoute />, 
         children: [
-          {path:"/host", 
+          {path:"/host/:carID", 
           element: <HostPage/>
         },
         ]},

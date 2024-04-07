@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useDriveShareContext } from "../context/DriveShareProvider";
 
 export const ReviewPage = () => {
-    const { fetchCars } = useDriveShareContext();
+    const { fetchAllCars } = useDriveShareContext();
     const [cars, setCars] = useState([]);
     const navigate = useNavigate();
 
     const fetchData = useCallback(async () => {
-        const data = await fetchCars();
+        const data = await fetchAllCars();
         setCars(data);
-    }, [fetchCars]);
+    }, [fetchAllCars]);
 
     useEffect(() => {
         fetchData();

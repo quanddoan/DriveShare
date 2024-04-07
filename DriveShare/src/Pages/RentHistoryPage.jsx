@@ -39,10 +39,13 @@ export const RentHistoryPage = () => {
                 <div className="w-full max-w-xl m-2 p-4 bg-gray-100">
                     {rentHistory.map((rentEntry, index) => (
                         <div key={index} className="flex flex-col gap-2 p-3">
+                            <span>Activity: {rentEntry.Activity}</span>
                             <span>Brand: {rentEntry.brand}</span>
                             <span>Type: {rentEntry.type}</span>
-                            <span>Start Date: {rentEntry.start_date}</span>
-                            <span>End Date: {rentEntry.end_date}</span>
+                            {rentEntry.start_date && 
+                            (<span>Start Date: {rentEntry.start_date}</span>)}
+                            {rentEntry.end_date &&
+                            (<span>End Date: {rentEntry.end_date}</span>)}
                             <hr />
                         </div>
                     ))}

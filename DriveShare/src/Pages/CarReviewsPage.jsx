@@ -36,7 +36,7 @@ export const CarReviewsPage = () => {
     }
     try {
       setError(""); // Reset error message before attempting
-      const newReview = { CarID: carID, Rating: rating, Review: reviewText };
+      const newReview = { CarID: carID, Rating: rating, Reviews: reviewText };
       await postReview(newReview);
       setReviews([...reviews, newReview]); // Assume the new review will be appended to the current list
       setReviewText(""); // Clear input after submission
@@ -75,7 +75,7 @@ export const CarReviewsPage = () => {
           reviews.map((review, index) => (
             <div className="text-xl flex flex-col m-2 p-4 bg-white rounded-lg shadow-md" key={index}>
               <span>Rating: {review.Rating} Stars</span>
-              <p>{review.Review}</p>
+              <p>{review.Reviews}</p>
             </div>
           ))
         )}

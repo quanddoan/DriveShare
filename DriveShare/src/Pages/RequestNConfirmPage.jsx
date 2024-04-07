@@ -28,7 +28,7 @@ export const RequestNConfirmPage = () => {
 
     const handleApproveRequest = async  (requestID) =>{
         const response = await approveRequest(requestID)
-        setFeedBackMessage(response)
+        setFeedBackMessage(response.message)
         fetchRequestData()
     }
 

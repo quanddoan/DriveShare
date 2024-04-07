@@ -106,8 +106,8 @@ export const SignUpPage = () => {
                 <select 
                     className="mb-4 w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     id="question1"
-                    name="question1"
                     onChange={handleChange} 
+                    name="question1"
                 >
                     {securityQuestions.map((question1, index) => (
                         <option key={index} value={question1}>{question1}</option>
