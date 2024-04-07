@@ -1003,7 +1003,7 @@ app.get('/api/history', (req: Request, res: Response) => {
         LEFT JOIN Requests ON Logs.carID = Requests.carID AND 
             ((Logs.Activity = 'approve request' AND Requests.status = 1)OR 
             (Logs.Activity = 'deny request' AND Requests.status = -1) OR 
-            (Logs.Activity <> 'Review posted' AND Logs.Actor = Requests.userID))
+            (Logs.Activity <> 'Review posted' AND Logs.Activity <> 'approve request' AND Logs.Activity <> 'deny request' AND Logs.Actor = Requests.userID))
         WHERE Logs.Actor = ?;`;
         db.all(logWithCarInfoQuery, [ActorID], (err, rows) => {
             if (err) {
