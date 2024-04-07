@@ -28,7 +28,7 @@ function notify(message: string, carId: number): notification {
         notificationObj.notification = `A review for vehicle #${carId} was posted`;
     }
     else if (message == "mail"){
-        notificationObj.notification = `You have mail from #${carId}`;
+        notificationObj.notification = `You have mail`;
     }
     else {
         notificationObj.notification = `Unrecognized event happened at vehicle #${carId}`;
@@ -38,7 +38,7 @@ function notify(message: string, carId: number): notification {
 
 abstract class Listener {
     public abstract subscribe(carId: number, userId: number, event:string) : void;
-    public abstract unsubscribe (element : subscriberObj) : void;
+    public abstract unsubscribe (carId: number, userId: number, event:string) : void;
     public abstract update(user : number): void;
     public abstract markHappened (user: number, vehicle : number, event : string) : void;
 }
@@ -80,7 +80,7 @@ class eventListener extends Listener{
         }
         return resultArr;
     }
-    public unsubscribe(element: subscriberObj): void {
+    private remove(element: subscriberObj): void {
         var index;
         var denyOrApprove = "";
         if (element.event == "approve"){
@@ -104,7 +104,12 @@ class eventListener extends Listener{
         this.find(user).forEach((obj) => {
             if (obj.happened) {
                 notificationArr.push(notify(obj.event, obj.carId));
-                this.unsubscribe(obj);
+                if (obj.event == "deny" || obj.event == "approve"){
+                    this.remove(obj);
+                }
+                else{
+                    obj.happened = false;
+                }
             }
         })
         return notificationArr;
@@ -115,6 +120,11 @@ class eventListener extends Listener{
             occurence[i].happened = true;
         }
     };
+    public unsubscribe(carId: number, userId: number, event:string): void {
+        this.find(userId, carId, event).forEach((element) => {
+            this.remove(element)
+        })
+    }
 }
 
 export { notification, eventListener }

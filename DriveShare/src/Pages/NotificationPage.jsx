@@ -41,7 +41,7 @@ export const NotificationPage = () => {
     return (
         <div className="flex flex-col text-center min-h-screen w-full">
             {myNotification.map((notification) => (
-                <div className="m-2 p-2 shadow-2xl">
+                <div className="m-2 p-2 shadow-lg">
                     <div className="font-bold">Notification</div>
                     {notification.notification}
                 </div>
