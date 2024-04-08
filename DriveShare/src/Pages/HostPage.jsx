@@ -9,8 +9,10 @@ export const HostPage = () => {
     const [message, setMessage] = useState('');
     const [VIN, setVIN] = useState('');
     const navigate = useNavigate();
+    //Get carID from parameter
     const { carID } = useParams();
-
+    //carID = 0 indicates that the entered vehicle will be listed new
+    //carID != 0 indicates that the entered vehicle is an adjustment of an already listed vehicle
     const [formData, setFormData] = useState({
         carId: (carID != 0) ? carID : -1,
         vehicleBrand: '',
@@ -40,7 +42,7 @@ export const HostPage = () => {
         console.log("response testing ", response.message);
         setMessage(response.message);
     };
-
+    //If this is an adjustment form, fetch car VIN 
     useEffect(() => {
         const fetchVIN = async () => {
             if (carID != 0) {
@@ -50,7 +52,7 @@ export const HostPage = () => {
         };
         fetchVIN();
     }, []);
-
+    //If this is an adjustment form, set VIN in the form to the retrieved VIN
     useEffect(() => {
         setFormData(prevState => ({
             ...prevState,

@@ -6,7 +6,7 @@ export const RentHistoryPage = () => {
     const [rentHistory, setRentHistory] = useState([]);
     const { getRentHistory } = useDriveShareContext();
     const [loading, setLoading] = useState(true);
-    
+    //Retrieve all logs entries
     useEffect(() => {
         const fetchRentHistory = async () => {
             try {

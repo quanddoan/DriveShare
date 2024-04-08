@@ -6,7 +6,7 @@ export const MyListingsPage = () => {
     const { getCarListings, userData, delistCar } = useDriveShareContext();
     const [myCarListings, setMyCarListings] = useState([]);
     const navigate = useNavigate()
-
+    //Get all vehicles listed by the user
     const fetchData = useCallback(async () => {
         if (userData.ID) {
             const data = await getCarListings(userData.ID);
@@ -17,12 +17,12 @@ export const MyListingsPage = () => {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-
+    //Delist a vehicle
     const handleDeleteCar = (ID) => {
         delistCar(ID);
         fetchData(); // Consider awaiting this or handling the promise to ensure state is updated after deletion
     };
-
+    //Update a vehicle will redirect to the host page with carID of the vehicle
     const handleUpdateCar = (ID) => {
         navigate(`/host/${ID}`);
     }

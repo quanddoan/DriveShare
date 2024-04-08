@@ -12,7 +12,7 @@ export const LoginPage = () => {
         event.preventDefault();
         await login(userName, password);
     };
-
+    //Redirect user to the main app after successfully logged in
     useEffect(() => {
         if (isLoggedIn && userData != null) {
             navigate("/app");

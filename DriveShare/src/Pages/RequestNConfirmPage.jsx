@@ -6,7 +6,7 @@ export const RequestNConfirmPage = () => {
     const [carInfo, setCarInfo] = useState({});
     const { fetchRequestDetails, approveRequest, denyRequest, getCarInfo } = useDriveShareContext();
     const [feedBackMessage, setFeedBackMessage] = useState("")
-
+    //Get all outstanding requests
     const fetchRequestData = async () => {
         const requests = await fetchRequestDetails();
         setRequestData(requests);
@@ -25,13 +25,13 @@ export const RequestNConfirmPage = () => {
             }
         });
     }, [requestData]);
-
+    //Send a request approval
     const handleApproveRequest = async  (requestID) =>{
         const response = await approveRequest(requestID)
         setFeedBackMessage(response.message)
         fetchRequestData()
     }
-
+    //Send a request denial
     const handleDenyRequest = (requestID) =>{
         
         const response = denyRequest(requestID)

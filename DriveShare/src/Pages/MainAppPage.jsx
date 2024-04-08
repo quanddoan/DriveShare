@@ -7,7 +7,7 @@ export const MainAppPage = () => {
     const [carSearch, setCarSearch] = useState('')
     const{fetchCars} = useDriveShareContext()
     const navigate = useNavigate()
-
+    //Display all retrieved vehicles
     useEffect(()=>{
         fetchCars().then(data => {
             setCarList(data);

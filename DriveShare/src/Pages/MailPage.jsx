@@ -21,7 +21,7 @@ export const MailPage = () => {
             </div>
         )
     }
-
+    //Get mails for the user
     const fetchData = async () => {
         const data = await getMail();
         if (data.length != 0) {
@@ -29,16 +29,16 @@ export const MailPage = () => {
             setHasMail(true)
         }
     }
-
+    //Toggle between show/hide the compose form
     const handleButtonClick = () => {
         setShowCompose(!showCompose);
     }
-
+    //Show mail content when user click on the mail
     const handleClickOnMail = (username, message) => {
         setMailSender(username);
         setMailContent(message);
     }
-
+    //Send mail
     const handleSubmit = async (e) => {
         e.preventDefault()
         const allFieldsFilled = Object.values(mailData).every(field => field !== '')
@@ -54,7 +54,7 @@ export const MailPage = () => {
             setMailSent("Something went wrong!");
         }
     }
-
+    //Set value of form fields to corressponding inputted data
     const handleChange = (e) =>{
         const {name, value} = e.target
         setMailData(prevState => ({
@@ -67,7 +67,7 @@ export const MailPage = () => {
     useEffect(() => {
         fetchData();
     }, []);
-
+    //Toggle the display of the compose field
     useEffect(() => {
         if (showCompose) {
             setDisplay("flex flex-col");

@@ -9,7 +9,7 @@ export const RentPage = () => {
     const {getCarInfo, rentCar} = useDriveShareContext()
     const [feedbackMessage, setFeedBackMessage] = useState('')
     
-
+    //Retrieve info of the vehicle wished to rent
     useEffect(()=>{
         const fetchCarInfo =async ()=>{
             if(carID){
@@ -26,13 +26,13 @@ export const RentPage = () => {
 
         fetchCarInfo()
     },[carID, getCarInfo])
-
+    //Form
     const [rentFormData,setRentFormData] = useState({
         carID:carID,
         startDate: '',
         endDate:''
     })
-
+    //Set form values
     const handleChange = (e) =>{
         const {name, value} = e.target
         setRentFormData(prevState => ({
@@ -41,7 +41,7 @@ export const RentPage = () => {
         }))
 
     }
-
+    //Submit form
     const handleSubmit = async (e) =>{
         e.preventDefault()
         const allFieldsFilled = Object.values(rentFormData).every(field=>field!=='')

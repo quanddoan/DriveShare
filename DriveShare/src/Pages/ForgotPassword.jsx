@@ -8,11 +8,11 @@ export const ForgotPassword = () => {
     const [questions, setQuestions] = useState([]);
     const [answers, setAnswers] = useState({});
     const [message, setMessage] = useState('');
-
+    //Set values of answers in the submit form to the answers inputted by the user
     const handleQuestionAnswer = (index, value) => {
         setAnswers(prev => ({ ...prev, [index]: value }));
     };
-
+    //Retrieve security questions and handle submit form
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!questions.length) {

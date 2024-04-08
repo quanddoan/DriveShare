@@ -14,7 +14,7 @@ export const NotificationPage = () => {
             </div>
         )
     }
-
+    //Get all notifications
     const fetchData = async() => {
         const data = await getNotification()
         if (data.length != 0){
@@ -27,7 +27,6 @@ export const NotificationPage = () => {
         fetchData()
     }, []);
 
-    console.log(myNotification);
     if (!hasNotification){
         return (
             <div className="flex flex-col justify-center text-center items-center min-h-screen w-full">

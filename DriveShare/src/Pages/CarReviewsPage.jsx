@@ -11,7 +11,7 @@ export const CarReviewsPage = () => {
   const { carID } = useParams();
   const { getReviewsForCar, postReview, getCarInfo } = useDriveShareContext();
   const [car, setCar] = useState(null);
-
+  //Get all reviews for the vehicle
   useEffect(() => {
     const fetchCarAndReviews = async () => {
       try {
@@ -27,7 +27,7 @@ export const CarReviewsPage = () => {
     };
     fetchCarAndReviews();
   }, [carID, getCarInfo, getReviewsForCar]);
-
+  //Submit a review
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!reviewText) {

@@ -13,21 +13,21 @@ const DriveShareProvider = ({children}) => {
 
     const reducer =(state, action)=>{
         switch(action.type){
-
+            //Save user data after logging in
             case 'LOGIN':
                 return{
                     ...state,
                     isLoggedIn: true,
                     userData: action.payload
                 }
-
+            //Delete user data after logging out
             case 'LOGOUT':
                 return{
                     ...state,
                     isLoggedIn: false,
                     userData:  null
                 }
-            
+            //Update user balance after payment
             case 'PAY':
                 return {
                     ...state,
@@ -48,7 +48,7 @@ const DriveShareProvider = ({children}) => {
     } = state;
 
     
-
+    //Get all availablable vehicles
     const fetchCars = async() =>{
         try{
             const response = await fetch ('/api');
@@ -66,7 +66,7 @@ const DriveShareProvider = ({children}) => {
         }
 
     }
-
+    //Get all vehicles
     const fetchAllCars = async() => {
         try{
             const response = await fetch ('/api/all');
@@ -83,7 +83,7 @@ const DriveShareProvider = ({children}) => {
 
         }
     }
-
+    //Get security questions from username
     const getSecurityQuestions = async (user_name) => {
         const response = await fetch('/api/forgotpassword',{
             method:'PUT',
@@ -100,7 +100,7 @@ const DriveShareProvider = ({children}) => {
         return data
         
     }
-
+    //Deny a booking request
     const denyRequest = async (requestID) => {
         try {
             const response = await fetch('/api/confirm', {
@@ -122,7 +122,7 @@ const DriveShareProvider = ({children}) => {
             throw error; // Rethrowing for further handling
         }
     };
-
+    //Submit a password recovery form
     async function submitPasswordRecovery(username, answers, newPassword) {
         try {
             const response = await fetch('/api/forgotpassword', {
@@ -152,7 +152,7 @@ const DriveShareProvider = ({children}) => {
     }
     
     
-
+    //Approve booking request
     const approveRequest = async (requestID) => {
         try {
             const response = await fetch('/api/confirm', {
@@ -175,7 +175,7 @@ const DriveShareProvider = ({children}) => {
         }
     };
     
-
+    //Get info of a vehicle based on carid
     const getCarInfo = async (ID) => {
         try {
             const response = await fetch(`/api/cars/${ID}`);
@@ -190,7 +190,7 @@ const DriveShareProvider = ({children}) => {
             throw error;
         }
     };
-
+    //Get notifications for a logged in user
     const getNotification = async () => {
         try {
             const response = await fetch('/api/notification');
@@ -222,7 +222,7 @@ const DriveShareProvider = ({children}) => {
             throw error;
         }
     };
-
+    //Send mail
     const postMail = async (mailData) => {
         try {
             const response = await fetch('/api/mail', {
@@ -245,7 +245,7 @@ const DriveShareProvider = ({children}) => {
             throw error;
         }
     };
-
+    //Submit a payment for a logged in user
     const payBalance = async (payment) => {
         try {
             const response = await fetch('/api/payment', {
@@ -279,7 +279,7 @@ const DriveShareProvider = ({children}) => {
             throw error;
         }
     }
-
+    //Take down a vehicle in the my listing page
     const delistCar = async (carId) => {
         try {
             const response = await fetch('/api/delist', {
@@ -306,7 +306,7 @@ const DriveShareProvider = ({children}) => {
         }
     };
 
-
+    //Get all vehicles listed by the user
     const getCarListings = async (userId) => {
         try {
             const response = await fetch(`/api/user/${userId}/cars`)
@@ -341,7 +341,7 @@ const DriveShareProvider = ({children}) => {
 
         }
     }
-
+    //Send a booking request for a vehicle
     const rentCar = async (rentData) => {
         try {
             const response = await fetch('/api/rent', {
@@ -366,7 +366,7 @@ const DriveShareProvider = ({children}) => {
             console.error("Error sending rent request")
         }
     }
-
+    //Get details of requests for vehicles listed by the user
     const fetchRequestDetails = async () => {
         try {
             const response = await fetch('/api/request', {
@@ -388,6 +388,7 @@ const DriveShareProvider = ({children}) => {
             return []; 
         }
     };
+    //Get all log entires associated with the user
     const getRentHistory = async () => {
         try {
             const response = await fetch('/api/history', {
@@ -409,7 +410,7 @@ const DriveShareProvider = ({children}) => {
             throw error; 
         }
     };
-      // Handler function to get reviews for a specific car
+    // Handler function to get reviews for a specific car
     const getReviewsForCar = async (carID) => {
         try {
             const response = await fetch(`/api/reviews/${carID}`);
@@ -422,7 +423,7 @@ const DriveShareProvider = ({children}) => {
         }
     };
 
-  // Handler function to post a new review for a car
+    // Handler function to post a new review for a car
     const postReview = async ({ CarID, Rating, Reviews }) => {
         try {
             const response = await fetch('/api/reviews', {
@@ -439,7 +440,7 @@ const DriveShareProvider = ({children}) => {
     };
   
     
-
+    //Send a registration form
     const registerUser =async  (userData) =>{
         const response = await fetch ('/api/register', {
             method: 'POST',

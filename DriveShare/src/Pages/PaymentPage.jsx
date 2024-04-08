@@ -6,7 +6,7 @@ export const PaymentPage = () => {
     const [result, setResult] = useState("");
     const [amount, setAmount] = useState();
     const [balance, setBalance] = useState();
-
+    //Submit payment
     const handleSubmit = async (e) => {
         e.preventDefault()
         const allFieldsFilled = Object.values(amount).every(field => field !== '')
@@ -28,7 +28,7 @@ export const PaymentPage = () => {
             setResult("Something went wrong!");
         }
     }
-
+    //Set amount in the form as the inputted amount
     const handleChange = (e) =>{
         const {name, value} = e.target
         setAmount(prevState => ({
